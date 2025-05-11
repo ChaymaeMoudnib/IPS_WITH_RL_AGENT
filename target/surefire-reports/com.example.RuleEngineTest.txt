@@ -1,0 +1,12 @@
+-------------------------------------------------------------------------------
+Test set: com.example.RuleEngineTest
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 0.014 s <<< FAILURE! - in com.example.RuleEngineTest
+testRuleWithThreshold  Time elapsed: 0 s  <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
+	at com.example.RuleEngineTest.testRuleWithThreshold(RuleEngineTest.java:77)
+
+testAddInvalidRule  Time elapsed: 0 s  <<< FAILURE!
+org.opentest4j.AssertionFailedError: Should throw IllegalArgumentException
+	at com.example.RuleEngineTest.testAddInvalidRule(RuleEngineTest.java:39)
+

@@ -1,0 +1,1 @@
+protocol,srcPort,srcIP,destPort,destIP,isMalicious,action

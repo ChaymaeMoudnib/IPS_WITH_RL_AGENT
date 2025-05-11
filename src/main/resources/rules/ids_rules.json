@@ -1,0 +1,103 @@
+[
+    {
+        "id": "rule_001",
+        "name": "SSH Brute Force Detection",
+        "protocol": "TCP",
+        "destinationPort": "22",
+        "options": {
+            "content": "SSH-",
+            "threshold": "5",
+            "window": "60"
+        }
+    },
+    {
+        "id": "rule_002",
+        "name": "SQL Injection Detection",
+        "protocol": "TCP",
+        "options": {
+            "content": "SELECT|UNION|INSERT|UPDATE|DELETE|DROP|--",
+            "severity": "HIGH"
+        }
+    },
+    {
+        "id": "rule_003",
+        "name": "XSS Attack Detection",
+        "protocol": "TCP",
+        "options": {
+            "content": "<script>|javascript:|onerror=|onload=",
+            "severity": "HIGH"
+        }
+    },
+    {
+        "id": "rule_004",
+        "name": "Port Scan Detection",
+        "protocol": "TCP",
+        "options": {
+            "threshold": "10",
+            "window": "30",
+            "severity": "MEDIUM"
+        }
+    },
+    {
+        "id": "rule_005",
+        "name": "SMB Exploit Detection",
+        "protocol": "TCP",
+        "destinationPort": "445",
+        "options": {
+            "content": "SMB",
+            "severity": "HIGH"
+        }
+    },
+    {
+        "id": "rule_006",
+        "name": "RDP Exploit Detection",
+        "protocol": "TCP",
+        "destinationPort": "3389",
+        "options": {
+            "content": "RDP",
+            "severity": "HIGH"
+        }
+    },
+    {
+        "id": "rule_007",
+        "name": "DNS Tunneling Detection",
+        "protocol": "UDP",
+        "destinationPort": "53",
+        "options": {
+            "threshold": "100",
+            "window": "60",
+            "severity": "MEDIUM"
+        }
+    },
+    {
+        "id": "rule_008",
+        "name": "ICMP Flood Detection",
+        "protocol": "ICMP",
+        "options": {
+            "threshold": "50",
+            "window": "10",
+            "severity": "HIGH"
+        }
+    },
+    {
+        "id": "rule_009",
+        "name": "HTTP Basic Auth Brute Force",
+        "protocol": "TCP",
+        "destinationPort": "80",
+        "options": {
+            "content": "Authorization: Basic",
+            "threshold": "10",
+            "window": "60",
+            "severity": "MEDIUM"
+        }
+    },
+    {
+        "id": "rule_010",
+        "name": "Suspicious File Download",
+        "protocol": "TCP",
+        "options": {
+            "content": ".exe|.dll|.bat|.ps1|.vbs",
+            "severity": "HIGH"
+        }
+    }
+] 

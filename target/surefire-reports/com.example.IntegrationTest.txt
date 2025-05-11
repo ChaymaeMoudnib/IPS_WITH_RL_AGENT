@@ -1,0 +1,15 @@
+-------------------------------------------------------------------------------
+Test set: com.example.IntegrationTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 1, Errors: 1, Skipped: 0, Time elapsed: 3.384 s <<< FAILURE! - in com.example.IntegrationTest
+testCompleteWorkflow  Time elapsed: 2.546 s  <<< ERROR!
+java.lang.ClassCastException: class java.lang.Integer cannot be cast to class java.lang.Long (java.lang.Integer and java.lang.Long are in module java.base of loader 'bootstrap')
+	at com.example.IntegrationTest.testCompleteWorkflow(IntegrationTest.java:110)
+
+testErrorHandling  Time elapsed: 0.262 s  <<< FAILURE!
+org.opentest4j.AssertionFailedError: Unexpected exception type thrown ==> expected: <java.io.IOException> but was: <java.lang.RuntimeException>
+	at com.example.IntegrationTest.testErrorHandling(IntegrationTest.java:162)
+Caused by: java.lang.RuntimeException: Failed to train from CSV: nonexistent.csv (Le fichier spécifié est introuvable)
+	at com.example.IntegrationTest.lambda$testErrorHandling$3(IntegrationTest.java:163)
+	at com.example.IntegrationTest.testErrorHandling(IntegrationTest.java:162)
+

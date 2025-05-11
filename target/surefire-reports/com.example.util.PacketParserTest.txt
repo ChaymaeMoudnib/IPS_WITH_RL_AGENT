@@ -1,0 +1,12 @@
+-------------------------------------------------------------------------------
+Test set: com.example.util.PacketParserTest
+-------------------------------------------------------------------------------
+Tests run: 7, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 0.008 s <<< FAILURE! - in com.example.util.PacketParserTest
+testHttpDetection  Time elapsed: 0.001 s  <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <null> but was: <true>
+	at com.example.util.PacketParserTest.testHttpDetection(PacketParserTest.java:54)
+
+testValidTcpPacket  Time elapsed: 0 s  <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <HTTP> but was: <TCP>
+	at com.example.util.PacketParserTest.testValidTcpPacket(PacketParserTest.java:41)
+
