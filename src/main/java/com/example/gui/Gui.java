@@ -134,6 +134,7 @@ public class Gui extends JFrame {
             JOptionPane.showMessageDialog(this, "Error starting capture: " + e.getMessage());
             stopCapture();
         }
+
     }
 
     private void stopCapture() {

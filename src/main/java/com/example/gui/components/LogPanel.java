@@ -1,6 +1,7 @@
 package com.example.gui.components;
 
 import javax.swing.*;
+import javax.swing.border.*;
 import java.awt.*;
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -11,13 +12,19 @@ import com.example.detection.Severity;
 
 public class LogPanel extends JPanel {
     private JTextPane logArea;
+    private JLabel logCountLabel;
+    private int logCount = 0;
     private static final String LOG_DIR = "logs";
     private FileWriter logWriter;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public LogPanel() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createTitledBorder("Logs & Alerts"));
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder("Logs & Alerts"),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        setBackground(new Color(245, 245, 245));
         initializeComponents();
         setupLayout();
         createLogDirectory();
@@ -26,12 +33,25 @@ public class LogPanel extends JPanel {
     private void initializeComponents() {
         logArea = new JTextPane();
         logArea.setEditable(false);
-        logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
         logArea.setBackground(new Color(250, 250, 250));
+        logArea.setMargin(new Insets(5, 5, 5, 5));
+
+        logCountLabel = new JLabel("Logs: 0");
+        logCountLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        logCountLabel.setForeground(new Color(0, 100, 0));
     }
 
     private void setupLayout() {
         JScrollPane logScroll = new JScrollPane(logArea);
+        logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        logScroll.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        headerPanel.setBackground(new Color(245, 245, 245));
+        headerPanel.add(logCountLabel);
+
+        add(headerPanel, BorderLayout.NORTH);
         add(logScroll, BorderLayout.CENTER);
     }
 
@@ -52,6 +72,8 @@ public class LogPanel extends JPanel {
         try {
             logArea.getDocument().insertString(logArea.getDocument().getLength(), text, null);
             logArea.setCaretPosition(logArea.getDocument().getLength());
+            logCount++;
+            logCountLabel.setText("Logs: " + logCount);
         } catch (javax.swing.text.BadLocationException e) {
             e.printStackTrace();
         }
@@ -61,27 +83,45 @@ public class LogPanel extends JPanel {
         if (alert == null) return;
 
         StringBuilder alertMessage = new StringBuilder();
-        alertMessage.append(String.format("[%s] [%s] ALERT: %s\n",
+        String icon = getAlertIcon(alert.getSeverity());
+        alertMessage.append(String.format("%s [%s] [%s] ALERT: %s\n",
+                icon,
                 dateFormat.format(new Date()),
                 alert.getSeverity(),
                 alert.getMessage()));
 
         Map<String, String> packetData = alert.getPacketData();
         if (packetData != null) {
-            alertMessage.append(String.format("Source: %s:%s\n",
+            alertMessage.append("----------------------------------------\n");
+            alertMessage.append(String.format("Source:      %s:%s\n",
                     packetData.get("srcIP"),
                     packetData.get("srcPort")));
             alertMessage.append(String.format("Destination: %s:%s\n",
                     packetData.get("destIP"),
                     packetData.get("destPort")));
-            alertMessage.append(String.format("Protocol: %s\n",
+            alertMessage.append(String.format("Protocol:    %s\n",
                     packetData.get("protocol")));
-            alertMessage.append(String.format("Data: %s\n",
+            alertMessage.append(String.format("Data:        %s\n",
                     packetData.get("data")));
+            alertMessage.append("----------------------------------------\n\n");
         }
 
-        alertMessage.append("-------------------\n");
         appendColoredAlert(alertMessage.toString(), alert.getSeverity().toString());
+    }
+
+    private String getAlertIcon(Severity severity) {
+        switch (severity) {
+            case CRITICAL:
+                return "🔴"; // Red circle
+            case HIGH:
+                return "⚠️"; // Warning sign
+            case MEDIUM:
+                return "🟡"; // Yellow circle
+            case LOW:
+                return "ℹ️"; // Information sign
+            default:
+                return "⚪"; // White circle
+        }
     }
 
     private void appendColoredAlert(String text, String severity) {
@@ -106,11 +146,14 @@ public class LogPanel extends JPanel {
         javax.swing.text.Style style = ((javax.swing.text.StyledDocument) logArea.getDocument())
                 .addStyle("Alert Style", null);
         javax.swing.text.StyleConstants.setForeground(style, color);
+        javax.swing.text.StyleConstants.setBold(style, true);
 
         try {
             ((javax.swing.text.StyledDocument) logArea.getDocument()).insertString(
                     logArea.getDocument().getLength(), text, style);
             logArea.setCaretPosition(logArea.getDocument().getLength());
+            logCount++;
+            logCountLabel.setText("Logs: " + logCount);
         } catch (javax.swing.text.BadLocationException e) {
             e.printStackTrace();
         }
@@ -118,6 +161,8 @@ public class LogPanel extends JPanel {
 
     public void clear() {
         logArea.setText("");
+        logCount = 0;
+        logCountLabel.setText("Logs: 0");
     }
 
     public void close() {

@@ -1,6 +1,7 @@
 package com.example.gui.components;
 
 import javax.swing.*;
+import javax.swing.border.*;
 import java.awt.*;
 
 public class SimulationPanel extends JPanel {
@@ -11,22 +12,45 @@ public class SimulationPanel extends JPanel {
 
     public SimulationPanel() {
         setLayout(new GridLayout(2, 2, 5, 5));
-        setBorder(BorderFactory.createTitledBorder("Attack Simulations"));
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder("Attack Simulations"),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        setBackground(new Color(245, 245, 245));
         initializeComponents();
         setupLayout();
     }
 
     private void initializeComponents() {
-        simulateDdosButton = new JButton("Simulate XSS Attack");
-        simulateSqlInjectionButton = new JButton("Simulate SQL Injection");
-        simulatePortScanButton = new JButton("Simulate Port Scan");
-        testSnortRulesButton = new JButton("Test Snort Rules");
+        simulateDdosButton = createButton("Simulate XSS Attack", "xss.png");
+        simulateSqlInjectionButton = createButton("Simulate SQL Injection", "sql.png");
+        simulatePortScanButton = createButton("Simulate Port Scan", "scan.png");
+        testSnortRulesButton = createButton("Test Snort Rules", "snort.png");
 
         // Disable buttons initially
         simulateDdosButton.setEnabled(false);
         simulateSqlInjectionButton.setEnabled(false);
         simulatePortScanButton.setEnabled(false);
         testSnortRulesButton.setEnabled(false);
+    }
+
+    private JButton createButton(String text, String iconName) {
+        JButton button = new JButton(text);
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/icons/" + iconName));
+            Image scaledImage = icon.getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH);
+            button.setIcon(new ImageIcon(scaledImage));
+        } catch (Exception e) {
+            // Icon not found, continue without it
+        }
+        button.setFocusPainted(false);
+        button.setBackground(new Color(240, 240, 240));
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+        button.setFont(new Font("Arial", Font.BOLD, 12));
+        return button;
     }
 
     private void setupLayout() {
