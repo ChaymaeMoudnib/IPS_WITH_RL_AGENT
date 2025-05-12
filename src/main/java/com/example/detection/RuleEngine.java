@@ -59,59 +59,72 @@ public class RuleEngine {
             List<Rule> loadedRules = ruleLoader.getRules();
             rules.addAll(loadedRules);
             
+            LOGGER.info("Loaded " + loadedRules.size() + " rules successfully");
+
             // Index rules by protocol for faster matching
             for (Rule rule : loadedRules) {
                 String protocol = rule.getProtocol();
                 protocolRules.computeIfAbsent(protocol, k -> new ArrayList<>()).add(rule);
             }
-            LOGGER.info("Loaded " + loadedRules.size() + " rules successfully");
+            
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error loading rules", e);
         }
     }
 
     public List<Rule> getMatchingRules(Map<String, String> packet) {
-        try {
             if (packet == null || packet.isEmpty()) {
-                LOGGER.warning("Received empty packet data");
                 return Collections.emptyList();
             }
 
+        try {
             List<Rule> matches = new ArrayList<>();
-            String protocol = packet.getOrDefault("protocol", "UNKNOWN");
+            String protocol = packet.getOrDefault("protocol", "UNKNOWN").toUpperCase();
             
-            // Get rules for this protocol
-            List<Rule> candidateRules = protocolRules.getOrDefault(protocol, Collections.emptyList());
+            List<Rule> candidateRules = new ArrayList<>();
+            candidateRules.addAll(protocolRules.getOrDefault(protocol, Collections.emptyList()));
+            candidateRules.addAll(protocolRules.getOrDefault("any", Collections.emptyList()));
             
             for (Rule rule : candidateRules) {
                 if (matches(packet, rule)) {
                     matches.add(rule);
-                    LOGGER.info("Rule matched: " + rule.getId());
                 }
             }
             
             return matches;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error matching rules", e);
             return Collections.emptyList();
         }
     }
 
     private boolean matches(Map<String, String> packet, Rule rule) {
+        if (packet == null || rule == null) return false;
+
         try {
-            // Quick checks first
             if (!matchesProtocol(packet, rule)) return false;
             if (!matchesIpAddresses(packet, rule)) return false;
             if (!matchesPorts(packet, rule)) return false;
-            
-            // More expensive checks
-            if (!matchesFlow(packet, rule)) return false;
-            if (!matchesContent(packet, rule)) return false;
-            if (!matchesFlags(packet, rule)) return false;
-            
-            return true;
+
+            String content = rule.getOptions().get("content");
+            if (content != null) {
+                String data = packet.get("data");
+                String payload = packet.get("payload");
+                
+                if (data == null && payload == null) return false;
+
+                boolean contentMatched = false;
+                if (data != null && data.contains(content)) {
+                    contentMatched = true;
+                }
+                if (payload != null && payload.contains(content)) {
+                    contentMatched = true;
+                }
+
+                if (!contentMatched) return false;
+                }
+
+        return true;
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Error matching rule: " + rule.getId(), e);
             return false;
         }
     }
@@ -171,7 +184,9 @@ public class RuleEngine {
         if (rulePort == null || rulePort.equals("any")) return true;
         
         try {
-            int port = Integer.parseInt(packetPort);
+            // Nettoyer le port d'entrée (enlever les parenthèses et texte)
+            String cleanPacketPort = packetPort.replaceAll("\\s*\\([^)]*\\)", "").trim();
+            int port = Integer.parseInt(cleanPacketPort);
             
             // Handle service names
             if (SERVICE_PORTS.containsKey(rulePort.toLowerCase())) {
@@ -189,11 +204,12 @@ public class RuleEngine {
                 }
                 return port == start;
             }
-        } catch (NumberFormatException e) {
-            LOGGER.log(Level.WARNING, "Invalid port number: " + packetPort, e);
-        }
-        
+            
+            // Try direct port number comparison
+            return port == Integer.parseInt(rulePort);
+        } catch (Exception e) {
         return false;
+        }
     }
 
     private boolean matchesFlow(Map<String, String> packet, Rule rule) {

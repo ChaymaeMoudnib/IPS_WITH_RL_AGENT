@@ -38,7 +38,9 @@ public enum AlertType {
     VULNERABILITY_SCAN("Vulnerability Scan"),
     
     // Nouvelle constante
-    RULE_MATCH("Rule Match");
+    RULE_MATCH("Rule Match"),
+    SUSPICIOUS_CONTENT("Suspicious Content"),
+    ANOMALY("Anomaly");
 
     private final String description;
 

@@ -44,6 +44,7 @@ public class Gui extends JFrame {
     private boolean isCapturing = false;
     private Thread captureThread;
     private String selectedProtocol = "ALL";
+
     
     // Statistiques
     private AtomicInteger tcpCount = new AtomicInteger(0);
@@ -64,9 +65,14 @@ public class Gui extends JFrame {
     private JButton simulateSqlInjectionButton;
     private JButton simulatePortScanButton;
     private ScheduledExecutorService simulationExecutor;
+    private JButton testSnortRulesButton;
     private Random random = new Random();
 
     private static final Logger LOGGER = Logger.getLogger(Gui.class.getName());
+
+    private JButton showActiveRulesButton;
+
+    private Alert lastAlert; // Variable pour stocker la dernière alerte
 
     public Gui() {
         idpsController = new IDPSController();
@@ -77,6 +83,7 @@ public class Gui extends JFrame {
         createLogDirectory();
         initializeRules();
         initializeRL();
+        initializeSnortRules();
 
         // --- Ajout d'une règle de test qui matchera toujours les paquets simulés ---
         Rule testRule = new Rule();
@@ -143,19 +150,26 @@ public class Gui extends JFrame {
         rlDecisionsArea.setBackground(new Color(250, 250, 250));
 
         // Initialize simulation buttons
-        simulateDdosButton = new JButton("Simulate DDoS");
+        simulateDdosButton = new JButton("Simulate XSS Attack");
         simulateSqlInjectionButton = new JButton("Simulate SQL Injection");
         simulatePortScanButton = new JButton("Simulate Port Scan");
+        testSnortRulesButton = new JButton("Test Snort Rules");
 
         // Add action listeners
-        simulateDdosButton.addActionListener(e -> simulateDdosAttack());
+        simulateDdosButton.addActionListener(e -> simulateXssAttack());
         simulateSqlInjectionButton.addActionListener(e -> simulateSqlInjection());
         simulatePortScanButton.addActionListener(e -> simulatePortScan());
+        testSnortRulesButton.addActionListener(e -> testSnortRules());
 
         // Disable buttons initially
         simulateDdosButton.setEnabled(false);
         simulateSqlInjectionButton.setEnabled(false);
         simulatePortScanButton.setEnabled(false);
+        testSnortRulesButton.setEnabled(false);
+
+        // Initialiser le bouton pour afficher les règles actives
+        showActiveRulesButton = new JButton("Afficher les règles actives");
+        showActiveRulesButton.addActionListener(e -> showActiveRules());
     }
 
     private void setupLayout() {
@@ -174,14 +188,16 @@ public class Gui extends JFrame {
         controlsPanel.add(buttonStop);
         controlsPanel.add(buttonExit);
         controlsPanel.add(rlEnabledCheckbox);
+        
         controlsPanel.add(statusLabel);
 
-        // Simulation panel row (already created)
-        JPanel simulationPanel = new JPanel(new GridLayout(1, 3, 5, 0));
+        // Simulation panel row
+        JPanel simulationPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         simulationPanel.setBorder(BorderFactory.createTitledBorder("Attack Simulations"));
         simulationPanel.add(simulateDdosButton);
         simulationPanel.add(simulateSqlInjectionButton);
         simulationPanel.add(simulatePortScanButton);
+        simulationPanel.add(testSnortRulesButton);
 
         // Add both rows to the top panel
         topPanel.add(controlsPanel);
@@ -235,6 +251,12 @@ public class Gui extends JFrame {
         setLayout(new BorderLayout());
         add(topPanel, BorderLayout.NORTH);
         add(mainSplitPane, BorderLayout.CENTER);
+
+        // Ajouter le bouton à la disposition
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(showActiveRulesButton);
+        // Ajoutez le panneau de boutons à votre disposition principale
+        add(buttonPanel, BorderLayout.SOUTH); // Ajustez la position selon vos besoins
     }
 
     private void createLogDirectory() {
@@ -387,7 +409,7 @@ public class Gui extends JFrame {
         String protocol = packetData.get("protocol");
         if (protocol == null) return;
 
-        // Incrémenter les compteurs de trafic en fonction du protocole
+        // Increment traffic counters based on protocol
         switch (protocol.toUpperCase()) {
             case "TCP":
             tcpCount.incrementAndGet();
@@ -395,43 +417,61 @@ public class Gui extends JFrame {
             case "UDP":
                 udpCount.incrementAndGet();
                 break;
+            case "ICMP":
+                // Increment ICMP counter if needed
+                break;
             case "HTTP":
                 httpCount.incrementAndGet();
-                tcpCount.incrementAndGet(); // HTTP utilise TCP
+                tcpCount.incrementAndGet();
                 break;
             case "HTTPS":
                 httpsCount.incrementAndGet();
-                tcpCount.incrementAndGet(); // HTTPS utilise TCP
+                tcpCount.incrementAndGet();
                 break;
         }
 
-        // Vérifier les règles de détection
+        // Check for rule matches and anomalies
         List<Rule> matchedRules = ruleEngine.getMatchingRules(packetData);
         if (!matchedRules.isEmpty()) {
             alertCount.incrementAndGet();
-            logAlert(packetData, matchedRules);
+            for (Rule rule : matchedRules) {
+                String severity = rule.getOption("severity");
+                String message = rule.getOption("msg");
+                Alert alert = new Alert(
+                    AlertType.RULE_MATCH,
+                    Severity.valueOf(severity),
+                    message,
+                    new HashMap<>(packetData)
+                );
+                displayAlert(alert);
+            }
         }
 
-        // Vérifier les anomalies
         Alert anomalyAlert = idpsController.getAnomalyDetector().detectAnomaly(packetData);
         if (anomalyAlert != null) {
             alertCount.incrementAndGet();
             displayAlert(anomalyAlert);
         }
 
-        // Mettre à jour l'affichage des statistiques
-        updateStatsDisplay();
+        // Update the statistics display
+        SwingUtilities.invokeLater(this::updateStatsDisplay);
     }
 
     private void displayAlert(Alert alert) {
+        if (alert == null) {
+            LOGGER.warning("Received null alert in displayAlert");
+            return;
+        }
+
+        lastAlert = alert;
         SwingUtilities.invokeLater(() -> {
+            try {
             StringBuilder alertMessage = new StringBuilder();
             alertMessage.append(String.format("[%s] [%s] ALERT: %s\n",
                     dateFormat.format(new Date()),
                     alert.getSeverity(),
                     alert.getMessage()));
 
-            // Ajouter les détails du paquet
             Map<String, String> packetData = alert.getPacketData();
             if (packetData != null) {
                 alertMessage.append(String.format("Source: %s:%s\n",
@@ -442,30 +482,15 @@ public class Gui extends JFrame {
                         packetData.get("destPort")));
                 alertMessage.append(String.format("Protocol: %s\n",
                         packetData.get("protocol")));
-
-                // Ajouter les flags TCP si présents
-                if (packetData.get("flags") != null) {
-                    alertMessage.append(String.format("TCP Flags: %s\n",
-                            packetData.get("flags")));
-                }
-
-                // Ajouter le contenu si présent
-                if (packetData.get("data") != null) {
-                    alertMessage.append("Payload: ").append(packetData.get("data")).append("\n");
-                }
+                    alertMessage.append(String.format("Data: %s\n",
+                            packetData.get("data")));
             }
 
             alertMessage.append("-------------------\n");
             appendColoredAlert(logArea, alertMessage.toString(), alert.getSeverity().toString());
-
-            // Écrire dans le fichier de log
-            try {
-                if (logWriter != null) {
-                    logWriter.write(alertMessage.toString());
-                    logWriter.flush();
-                }
-            } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, "Error writing to log file", e);
+                logArea.repaint();
+            } catch (Exception e) {
+                LOGGER.severe("Error displaying alert: " + e.getMessage());
             }
         });
     }
@@ -574,6 +599,7 @@ public class Gui extends JFrame {
             simulateDdosButton.setEnabled(true);
             simulateSqlInjectionButton.setEnabled(true);
             simulatePortScanButton.setEnabled(true);
+            testSnortRulesButton.setEnabled(true);
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error starting capture: " + e.getMessage());
@@ -627,6 +653,7 @@ public class Gui extends JFrame {
             simulateDdosButton.setEnabled(false);
             simulateSqlInjectionButton.setEnabled(false);
             simulatePortScanButton.setEnabled(false);
+            testSnortRulesButton.setEnabled(false);
 
             // Stop any running simulations
             if (simulationExecutor != null) {
@@ -684,8 +711,10 @@ public class Gui extends JFrame {
      * @param packetData Les données du paquet à afficher
      */
     public void updateDisplay(Map<String, String> packetData) {
-        if (packetData == null)
+        if (packetData == null) {
+            LOGGER.warning("Received null packet data in updateDisplay");
             return;
+        }
 
         lastDisplayedPacket = new HashMap<>(packetData);
 
@@ -696,15 +725,24 @@ public class Gui extends JFrame {
                 packetArea.setCaretPosition(packetArea.getDocument().getLength());
             }
 
+            // Vérifier explicitement les règles
+            List<Rule> matchedRules = ruleEngine.getMatchingRules(packetData);
+            LOGGER.info("Found " + matchedRules.size() + " matching rules for packet");
+
+            for (Rule rule : matchedRules) {
+                LOGGER.info("Processing matched rule: " + rule.getOptions().get("msg"));
+                String severity = rule.getOption("severity");
+                Alert alert = new Alert(
+                    AlertType.RULE_MATCH,
+                    Severity.valueOf(severity),
+                    rule.getOption("msg"),
+                    new HashMap<>(packetData)
+                );
+                displayAlert(alert);
+            }
+
             // Mettre à jour les statistiques
             updateStatistics(packetData);
-
-            // Vérifier les règles
-            if (ruleEngine.matches(packetData)) {
-                Rule matchedRule = ruleEngine.getLastMatchedRule();
-                String severity = matchedRule.getOption("severity");
-                appendColoredAlert(logArea, formatPacketData(packetData), severity);
-            }
         });
     }
 ////////////////////////////////
@@ -717,27 +755,16 @@ public class Gui extends JFrame {
         return lastDisplayedPacket != null ? new HashMap<>(lastDisplayedPacket) : null;
     }
 
-    private void simulateDdosAttack() {
-        if (simulationExecutor != null) {
-            simulationExecutor.shutdownNow();
-        }
-
-        simulationExecutor = Executors.newScheduledThreadPool(1);
-        simulationExecutor.scheduleAtFixedRate(() -> {
-            // Simuler 25 paquets par fenêtre (au-dessus du seuil de 20)
-            for (int i = 0; i < 25; i++) {
+    private void simulateXssAttack() {
                 Map<String, String> packet = new HashMap<>();
                 packet.put("srcIP", "192.168.1." + random.nextInt(255));
                 packet.put("destIP", "192.168.1.1");
                 packet.put("srcPort", String.valueOf(random.nextInt(65535)));
                 packet.put("destPort", "80");
                 packet.put("protocol", "TCP");
-                packet.put("flags", "SYN");
-                String ddosPayload = "GET / HTTP/1.1\r\nHost: target.com\r\n\r\n";
-                packet.put("data", ddosPayload);
+        String xssPayload = "<script>alert('XSS')</script>";
+        packet.put("data", xssPayload);
                 updateDisplay(packet);
-            }
-        }, 0, 4, TimeUnit.SECONDS); // Légèrement plus rapide que la fenêtre de 5 secondes
     }
 
     private void simulateSqlInjection() {
@@ -754,68 +781,187 @@ public class Gui extends JFrame {
     }
 
     private void simulatePortScan() {
-        if (simulationExecutor != null) {
-            simulationExecutor.shutdownNow();
-        }
-
-        simulationExecutor = Executors.newScheduledThreadPool(1);
-        simulationExecutor.scheduleAtFixedRate(() -> {
-            // Simuler 6 tentatives de scan (au-dessus du seuil de 5)
-            for (int i = 0; i < 6; i++) {
+        String srcIP = "192.168.1.200"; // Fixe pour la simulation
+        for (int i = 0; i < 3; i++) {
             Map<String, String> packet = new HashMap<>();
-            packet.put("srcIP", "192.168.1." + random.nextInt(255));
+            packet.put("srcIP", srcIP);
             packet.put("destIP", "192.168.1.1");
-            packet.put("srcPort", String.valueOf(random.nextInt(65535)));
-            packet.put("destPort", String.valueOf(random.nextInt(1024)));
+            packet.put("srcPort", String.valueOf(40000 + i));
+            packet.put("destPort", String.valueOf(80 + i)); // ports différents
             packet.put("protocol", "TCP");
             packet.put("flags", "SYN");
             updateDisplay(packet);
+            try { Thread.sleep(500); } catch (InterruptedException e) { /* ignore */ }
+        }
+    }
+
+    private void testSnortRules() {
+        // Ajouter une règle de test simple
+        Rule testRule = new Rule();
+        testRule.setProtocol("ICMP");
+        testRule.setSourceIp("any");
+        testRule.setDestinationIp("any");
+        testRule.addOption("content", "AAAA");
+        testRule.addOption("msg", "Test ICMP Alert");
+        testRule.addOption("severity", "HIGH");
+        testRule.addOption("sid", "1000001");
+        ruleEngine.addRule(testRule);
+
+        LOGGER.info("Starting Snort rules test...");
+        LOGGER.info("Number of loaded rules: " + ruleEngine.getRules().size());
+
+        // Test avec la règle simple d'abord
+        simulateTestICMP();
+        try { Thread.sleep(500); } catch (InterruptedException e) { /* ignore */ }
+        
+        // Puis les autres simulations
+        simulateSnortTFNProbe();
+        try { Thread.sleep(500); } catch (InterruptedException e) { /* ignore */ }
+        
+        simulateSnortTFN2K();
+        try { Thread.sleep(500); } catch (InterruptedException e) { /* ignore */ }
+        
+        simulateSnortTrin00();
+    }
+
+    private void simulateTestICMP() {
+        LOGGER.info("Simulating test ICMP packet...");
+        Map<String, String> packet = new HashMap<>();
+        packet.put("srcIP", "192.168.1." + random.nextInt(255));
+        packet.put("destIP", "192.168.1.1");
+        packet.put("protocol", "ICMP");
+        packet.put("data", "AAAA");
+        
+        LOGGER.info("Generated test packet: " + packet);
+        
+        // Vérifier explicitement les règles avant updateDisplay
+        List<Rule> matchedRules = ruleEngine.getMatchingRules(packet);
+        LOGGER.info("Matched rules for test packet: " + matchedRules.size());
+        
+            for (Rule rule : matchedRules) {
+            LOGGER.info("Rule matched: " + rule.getOptions().get("msg"));
+                Alert alert = new Alert(
+                    AlertType.RULE_MATCH,
+                    Severity.valueOf(rule.getOption("severity")),
+                rule.getOption("msg"),
+                packet
+                );
+            displayAlert(alert);
+        }
+        
+        // Mise à jour de l'affichage
+        updateDisplay(packet);
+    }
+
+    private void simulateSnortTFNProbe() {
+        Map<String, String> packet = new HashMap<>();
+        packet.put("srcIP", "192.168.1." + random.nextInt(255));
+        packet.put("destIP", "192.168.1.1");
+        packet.put("protocol", "ICMP");
+        packet.put("icmp_id", "678");
+        packet.put("icmp_type", "8");
+        packet.put("data", "1234");
+        
+        // Mise à jour de l'affichage et vérification des règles
+        updateDisplay(packet);
+    }
+
+    private void simulateSnortTFN2K() {
+        Map<String, String> packet = new HashMap<>();
+        packet.put("srcIP", "192.168.1." + random.nextInt(255));
+        packet.put("destIP", "192.168.1.1");
+        packet.put("protocol", "ICMP");
+        packet.put("icmp_id", "0");
+        packet.put("icmp_type", "0");
+        packet.put("data", "AAAAAAAAAA");
+        
+        // Mise à jour de l'affichage et vérification des règles
+        updateDisplay(packet);
+    }
+
+    private void simulateSnortTrin00() {
+        Map<String, String> packet = new HashMap<>();
+        packet.put("srcIP", "192.168.1." + random.nextInt(255));
+        packet.put("destIP", "192.168.1.1");
+        packet.put("protocol", "UDP");
+        packet.put("srcPort", String.valueOf(random.nextInt(65535)));
+        packet.put("destPort", "31335");
+        packet.put("data", "PONG");
+        
+        // Mise à jour de l'affichage et vérification des règles
+        updateDisplay(packet);
+    }
+
+    private void initializeSnortRules() {
+        // TFN Probe Rule
+        Rule tfnRule = new Rule();
+        tfnRule.setProtocol("ICMP");
+        tfnRule.setSourceIp("any");
+        tfnRule.setDestinationIp("any");
+        tfnRule.addOption("icmp_id", "678");
+        tfnRule.addOption("icmp_type", "8");
+        tfnRule.addOption("content", "1234");
+        tfnRule.addOption("msg", "PROTOCOL-ICMP TFN Probe");
+        tfnRule.addOption("severity", "HIGH");
+        ruleEngine.addRule(tfnRule);
+
+        // TFN2K Rule
+        Rule tfn2kRule = new Rule();
+        tfn2kRule.setProtocol("ICMP");
+        tfn2kRule.setSourceIp("any");
+        tfn2kRule.setDestinationIp("any");
+        tfn2kRule.addOption("icmp_id", "0");
+        tfn2kRule.addOption("icmp_type", "0");
+        tfn2kRule.addOption("content", "AAAAAAAAAA");
+        tfn2kRule.addOption("msg", "PROTOCOL-ICMP tfn2k icmp possible communication");
+        tfn2kRule.addOption("severity", "HIGH");
+        ruleEngine.addRule(tfn2kRule);
+
+        // Trin00 Rule
+        Rule trin00Rule = new Rule();
+        trin00Rule.setProtocol("UDP");
+        trin00Rule.setSourceIp("any");
+        trin00Rule.setDestinationIp("any");
+        trin00Rule.setDestinationPort("31335");
+        trin00Rule.addOption("content", "PONG");
+        trin00Rule.addOption("msg", "MALWARE-OTHER Trin00 Daemon to Master PONG message detected");
+        trin00Rule.addOption("severity", "CRITICAL");
+        ruleEngine.addRule(trin00Rule);
+
+        // Exemple de règle de test
+        Rule testMaliciousRule = new Rule();
+        testMaliciousRule.setProtocol("TCP");
+        testMaliciousRule.setSourceIp("any");
+        testMaliciousRule.setDestinationIp("any");
+        testMaliciousRule.setDestinationPort("80");
+        testMaliciousRule.addOption("malicious", "true"); // Ajoutez cette option
+        testMaliciousRule.addOption("msg", "Test Malicious Rule");
+        testMaliciousRule.addOption("severity", "HIGH");
+        ruleEngine.addRule(testMaliciousRule);
+    }
+
+    private void showActiveRules() {
+        RuleEngine ruleEngine = new RuleEngine(); // Assurez-vous que cela correspond à votre logique
+        List<Rule> activeRules = ruleEngine.getRules(); // Récupérer les règles actives
+
+        StringBuilder rulesDisplay = new StringBuilder();
+        for (Rule rule : activeRules) {
+            // Vérifiez si la règle contient un message indiquant qu'elle détecte un malware
+            String msg = rule.getOptions().get("msg");
+            if (msg != null && (msg.contains("MALWARE") || msg.contains("PROTOCOL-ICMP"))) {
+                rulesDisplay.append(msg).append("\n"); // Affichez le message de la règle
             }
-        }, 0, 25, TimeUnit.SECONDS); // Légèrement plus rapide que la fenêtre de 30 secondes
+        }
+
+        // Afficher les règles dans un dialogue avec défilement
+        JTextArea rulesTextArea = new JTextArea(rulesDisplay.toString());
+        rulesTextArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(rulesTextArea);
+        scrollPane.setPreferredSize(new Dimension(400, 300)); // Ajustez la taille selon vos besoins
+
+        JOptionPane.showMessageDialog(this, scrollPane, "Règles Actives", JOptionPane.INFORMATION_MESSAGE);
     }
 }
-    //     private void sendEmailAlert(Alert alert) {
-//         try {
-//             Properties props = new Properties();
-//             props.put("mail.smtp.host", "smtp.gmail.com");
-//             props.put("mail.smtp.socketFactory.port", "465");
-//             props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-//             props.put("mail.smtp.auth", "true");
-//             props.put("mail.smtp.port", "465");
+// Add email button
 
-//             Session session = Session.getDefaultInstance(props, new Authenticator() {
-//                 @Override
-//                 protected PasswordAuthentication getPasswordAuthentication() {
-//                     return new PasswordAuthentication("rhouzali307@gmail.com", "fjlj mshk dwda meon");
-//                 }
-//             });
 
-//             Message message = new MimeMessage(session);
-//             message.setFrom(new InternetAddress("rhouzali307@gmail.com"));
-//             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("rhouzalis307@gmail.com"));
-//             message.setSubject("IDS Alert: " + alert.getType());
-            
-//             StringBuilder body = new StringBuilder();
-//             body.append("Alert Type: ").append(alert.getType()).append("\n");
-//             body.append("Severity: ").append(alert.getSeverity()).append("\n");
-//             body.append("Message: ").append(alert.getMessage()).append("\n");
-//             body.append("Timestamp: ").append(dateFormat.format(new Date())).append("\n\n");
-            
-//             Map<String, String> packetData = alert.getPacketData();
-//             if (packetData != null) {
-//                 body.append("Packet Details:\n");
-//                 body.append("Source IP: ").append(packetData.get("srcIP")).append("\n");
-//                 body.append("Destination IP: ").append(packetData.get("destIP")).append("\n");
-//                 body.append("Protocol: ").append(packetData.get("protocol")).append("\n");
-//                 body.append("Destination Port: ").append(packetData.get("destPort")).append("\n");
-//             }
-            
-//             message.setText(body.toString());
-//             Transport.send(message);
-            
-//             LOGGER.info("Alert email sent successfully");
-//         } catch (Exception e) {
-//             LOGGER.log(Level.SEVERE, "Error sending alert email", e);
-//         }
-//     }
-// }

@@ -4,7 +4,6 @@ import com.example.detection.Alert;
 import com.example.detection.AlertType;
 import com.example.detection.Severity;
 import com.example.util.Rule;
-import com.example.util.EmailService;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -25,7 +24,6 @@ public class AlertLogger {
     
     private final SimpleDateFormat dateFormat;
     private final ExecutorService executor;
-    private final EmailService emailService;
     private final AtomicLong currentLogSize;
     private FileWriter logWriter;
     private String currentLogFile;
@@ -34,7 +32,6 @@ public class AlertLogger {
         createLogDirectory();
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         this.executor = Executors.newSingleThreadExecutor();
-        this.emailService = EmailService.getInstance();
         this.currentLogSize = new AtomicLong(0);
         initializeLogFile();
     }
@@ -110,10 +107,6 @@ public class AlertLogger {
                     if (currentLogSize.get() > MAX_LOG_SIZE) {
                         rotateLog();
                     }
-                }
-
-                if (alert.getSeverity() == Severity.CRITICAL || alert.getSeverity() == Severity.HIGH) {
-                    emailService.sendAlertEmail(alert);
                 }
             } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Failed to write log entry", e);
