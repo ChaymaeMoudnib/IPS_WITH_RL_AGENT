@@ -13,13 +13,18 @@ import java.util.Date;
 import com.example.util.LivePacketReader;
 import com.example.util.PacketParser;
 import com.example.util.Rule;
-import com.example.util.RuleEngine;
+import com.example.detection.RuleEngine;
 import com.example.IDPSController;
+import com.example.detection.Alert;
+import com.example.detection.AlertType;
+import com.example.detection.Severity;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Gui extends JFrame {
     private JComboBox<String> interfaceComboBox;
@@ -60,6 +65,8 @@ public class Gui extends JFrame {
     private JButton simulatePortScanButton;
     private ScheduledExecutorService simulationExecutor;
     private Random random = new Random();
+
+    private static final Logger LOGGER = Logger.getLogger(Gui.class.getName());
 
     public Gui() {
         idpsController = new IDPSController();
@@ -259,11 +266,11 @@ public class Gui extends JFrame {
 
         // Charger et entraîner le modèle avec le fichier CSV
         try {
-            insertText(logArea, "Loading RL model from test_csv.csv...\n");
+            insertText(rlDecisionsArea, "Loading RL model from test_csv.csv...\n");
             idpsController.train("test_csv.csv");
-            insertText(logArea, "RL model trained successfully\n");
+            insertText(rlDecisionsArea, "RL model trained successfully\n");
         } catch (Exception e) {
-            insertText(logArea, "Error training RL model: " + e.getMessage() + "\n");
+            insertText(rlDecisionsArea, "Error training RL model: " + e.getMessage() + "\n");
             e.printStackTrace();
             // Créer un fichier CSV vide si nécessaire
             try {
@@ -272,10 +279,10 @@ public class Gui extends JFrame {
                     try (FileWriter fw = new FileWriter(csvFile)) {
                         fw.write("protocol,srcPort,srcIP,destPort,destIP,isMalicious,action\n");
                     }
-                    insertText(logArea, "Created empty training file: test_csv.csv\n");
+                    insertText(rlDecisionsArea, "Created empty training file: test_csv.csv\n");
                 }
             } catch (IOException ex) {
-                insertText(logArea, "Error creating CSV file: " + ex.getMessage() + "\n");
+                insertText(rlDecisionsArea, "Error creating CSV file: " + ex.getMessage() + "\n");
             }
         }
     }
@@ -311,82 +318,6 @@ public class Gui extends JFrame {
         }
     }
 
-    private void updateRLStats(Map<String, Object> stats) {
-        if (statsArea.getText().isEmpty()) {
-            // Premier affichage des stats
-            StringBuilder sb = new StringBuilder();
-            sb.append("=== RL Statistics ===\n");
-            sb.append("Allowed packets: 0\n");
-            sb.append("Blocked packets: 0\n");
-            sb.append("Current confidence: 0.0\n");
-            sb.append("==================\n\n");
-            statsArea.setText(sb.toString());
-        }
-
-        // Mettre à jour uniquement les nombres
-        String currentText = statsArea.getText();
-        String updatedText = currentText.replaceFirst(
-                "Allowed packets: \\d+",
-                "Allowed packets: " + stats.get("allowedCount")).replaceFirst(
-                        "Blocked packets: \\d+",
-                        "Blocked packets: " + stats.get("blockedCount"))
-                .replaceFirst(
-                        "Current confidence: [0-9.]+",
-                        "Current confidence: " + String.format("%.2f", stats.get("confidence")));
-
-        statsArea.setText(updatedText);
-    }
-
-    // private void logAlert(Map<String, String> packetData) {
-    //     Rule matchedRule = ruleEngine.getLastMatchedRule();
-    //     String severity = matchedRule.getOption("severity");
-    //     String message = matchedRule.getOption("msg");
-
-    //     // Formater l'alerte avec plus de détails
-    //     StringBuilder alertBuilder = new StringBuilder();
-    //     alertBuilder.append(String.format("[%s] [%s] ALERT: %s\n",
-    //             dateFormat.format(new Date()),
-    //             severity,
-    //             message));
-
-    //     // Ajouter les détails du paquet
-    //     alertBuilder.append(String.format("Source: %s:%s\n",
-    //             packetData.get("srcIP"),
-    //             packetData.get("srcPort")));
-    //     alertBuilder.append(String.format("Destination: %s:%s\n",
-    //             packetData.get("destIP"),
-    //             packetData.get("destPort")));
-    //     alertBuilder.append(String.format("Protocol: %s\n",
-    //             packetData.get("protocol")));
-
-    //     // Ajouter les flags TCP si présents
-    //     if (packetData.get("flags") != null) {
-    //         alertBuilder.append(String.format("TCP Flags: %s\n",
-    //                 packetData.get("flags")));
-    //     }
-
-    //     // Ajouter le contenu si présent
-    //     if (packetData.get("data") != null) {
-    //         alertBuilder.append("Payload: ").append(packetData.get("data")).append("\n");
-    //     }
-
-    //     alertBuilder.append("-------------------\n");
-    //     final String alertMessage = alertBuilder.toString();
-
-    //     // Afficher l'alerte avec la couleur appropriée
-    //     SwingUtilities.invokeLater(() -> {
-    //         appendColoredAlert(logArea, alertMessage, severity);
-    //     });
-
-    //     // Écrire dans le fichier de log
-    //     try {
-    //         logWriter.write(alertMessage);
-    //         logWriter.flush();
-    //     } catch (IOException e) {
-    //         System.err.println("Error writing to log file: " + e.getMessage());
-    //     }
-    // }
-
     private void appendColoredAlert(JTextPane textPane, String text, String severity) {
         // Définir la couleur en fonction de la sévérité
         Color color;
@@ -417,8 +348,39 @@ public class Gui extends JFrame {
                     textPane.getDocument().getLength(), text, style);
             textPane.setCaretPosition(textPane.getDocument().getLength());
         } catch (javax.swing.text.BadLocationException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.SEVERE, "Error appending colored alert", e);
         }
+    }
+
+    private void updateRLStats(Map<String, Object> stats) {
+        if (statsArea.getText().isEmpty()) {
+            // Premier affichage des stats
+            StringBuilder sb = new StringBuilder();
+            sb.append("=== RL Statistics ===\n");
+            sb.append("Allowed packets: 0\n");
+            sb.append("Blocked packets: 0\n");
+            sb.append("Test Accuracy: 0.0% (0/0)\n");
+            sb.append("==================\n\n");
+            statsArea.setText(sb.toString());
+        }
+
+        // Get test accuracy from stats
+        int correct = (int) stats.get("correctCount");
+        int total = (int) stats.get("totalCount");
+        double accuracy = total > 0 ? (100.0 * correct / total) : 0.0;
+
+        // Mettre à jour uniquement les nombres
+        String currentText = statsArea.getText();
+        String updatedText = currentText.replaceFirst(
+                "Allowed packets: \\d+",
+                "Allowed packets: " + stats.get("allowedCount")).replaceFirst(
+                        "Blocked packets: \\d+",
+                        "Blocked packets: " + stats.get("blockedCount"))
+                .replaceFirst(
+                        "Test Accuracy: [0-9.]+% \\(\\d+/\\d+\\)",
+                        String.format("Test Accuracy: %.2f%% (%d/%d)", accuracy, correct, total));
+
+        statsArea.setText(updatedText);
     }
 
     private void updateStatistics(Map<String, String> packetData) {
@@ -444,20 +406,80 @@ public class Gui extends JFrame {
         }
 
         // Vérifier les règles de détection
-        boolean matched = ruleEngine.matches(packetData);
-        if (matched) {
+        List<Rule> matchedRules = ruleEngine.getMatchingRules(packetData);
+        if (!matchedRules.isEmpty()) {
             alertCount.incrementAndGet();
-            Rule matchedRule = ruleEngine.getLastMatchedRule();
-            System.out.println("[DEBUG] Règle détectée: " + (matchedRule != null ? matchedRule.getName() : "(aucun nom)") + " | Paquet: " + packetData);
-            
-            // Appeler logAlert avec le paquet et la règle correspondante
-            logAlert(packetData, List.of(matchedRule)); // Appel de logAlert
-        } else {
-            System.out.println("[DEBUG] Aucun match de règle pour ce paquet: " + packetData);
+            logAlert(packetData, matchedRules);
+        }
+
+        // Vérifier les anomalies
+        Alert anomalyAlert = idpsController.getAnomalyDetector().detectAnomaly(packetData);
+        if (anomalyAlert != null) {
+            alertCount.incrementAndGet();
+            displayAlert(anomalyAlert);
         }
 
         // Mettre à jour l'affichage des statistiques
         updateStatsDisplay();
+    }
+
+    private void displayAlert(Alert alert) {
+        SwingUtilities.invokeLater(() -> {
+            StringBuilder alertMessage = new StringBuilder();
+            alertMessage.append(String.format("[%s] [%s] ALERT: %s\n",
+                    dateFormat.format(new Date()),
+                    alert.getSeverity(),
+                    alert.getMessage()));
+
+            // Ajouter les détails du paquet
+            Map<String, String> packetData = alert.getPacketData();
+            if (packetData != null) {
+                alertMessage.append(String.format("Source: %s:%s\n",
+                        packetData.get("srcIP"),
+                        packetData.get("srcPort")));
+                alertMessage.append(String.format("Destination: %s:%s\n",
+                        packetData.get("destIP"),
+                        packetData.get("destPort")));
+                alertMessage.append(String.format("Protocol: %s\n",
+                        packetData.get("protocol")));
+
+                // Ajouter les flags TCP si présents
+                if (packetData.get("flags") != null) {
+                    alertMessage.append(String.format("TCP Flags: %s\n",
+                            packetData.get("flags")));
+                }
+
+                // Ajouter le contenu si présent
+                if (packetData.get("data") != null) {
+                    alertMessage.append("Payload: ").append(packetData.get("data")).append("\n");
+                }
+            }
+
+            alertMessage.append("-------------------\n");
+            appendColoredAlert(logArea, alertMessage.toString(), alert.getSeverity().toString());
+
+            // Écrire dans le fichier de log
+            try {
+                if (logWriter != null) {
+                    logWriter.write(alertMessage.toString());
+                    logWriter.flush();
+                }
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "Error writing to log file", e);
+            }
+        });
+    }
+
+    private void logAlert(Map<String, String> packetData, List<Rule> matchedRules) {
+        for (Rule rule : matchedRules) {
+            Alert alert = new Alert(
+                AlertType.RULE_MATCH,
+                Severity.valueOf(rule.getOption("severity")),
+                rule.getOption("msg"),
+                new HashMap<>(packetData)
+            );
+            displayAlert(alert);
+        }
     }
 
     private void updateStatsDisplay() {
@@ -475,42 +497,10 @@ public class Gui extends JFrame {
             Map<String, Object> rlStats = idpsController.getStatistics(); // Supposons que cette méthode existe
             stats.append("Allowed packets: ").append(rlStats.get("allowedCount")).append("\n");
             stats.append("Blocked packets: ").append(rlStats.get("blockedCount")).append("\n");
-            stats.append("Current confidence: ").append(rlStats.get("confidence")).append("\n");
+            stats.append("Accuracy: ").append(rlStats.get("accuracy")).append("\n");
 
             statsArea.setText(stats.toString());
         });
-    }
-
-    private void logAlert(Map<String, String> packetData, List<Rule> matchedRules) {
-        try {
-            if (logWriter == null) {
-                File logDir = new File(LOG_DIR);
-                if (!logDir.exists()) {
-                    logDir.mkdirs();
-                }
-                String logFile = LOG_DIR + "/alerts_" +
-                        new SimpleDateFormat("yyyyMMdd").format(new Date()) + ".log";
-                logWriter = new FileWriter(logFile, true);
-            }
-
-            StringBuilder logEntry = new StringBuilder();
-            logEntry.append(dateFormat.format(new Date())).append(" - ");
-            logEntry.append("Alert: ").append(packetData.get("protocol"));
-            logEntry.append(" from ").append(packetData.get("srcIP"))
-                    .append(":").append(packetData.get("srcPort"));
-            logEntry.append(" to ").append(packetData.get("destIP"))
-                    .append(":").append(packetData.get("destPort"));
-
-            for (Rule rule : matchedRules) {
-                logEntry.append("\n  Rule: ").append(rule.getOptions().get("msg"));
-            }
-            logEntry.append("\n");
-
-            logWriter.write(logEntry.toString());
-            logWriter.flush();
-        } catch (IOException e) {
-            System.err.println("Error writing to log file: " + e.getMessage());
-        }
     }
 
     private void startCapture() {
@@ -618,28 +608,6 @@ public class Gui extends JFrame {
         }
     }
 
-    // private void updatePacketDisplay(Map<String, String> packetData) {
-    //     // Vérifier d'abord avec le RL
-    //     boolean allowed = true;
-    //     if (rlEnabledCheckbox.isSelected()) {
-    //         allowed = idpsController.processPacket(packetData);
-    //     }
-
-    //     if (!allowed) {
-    //         insertText(logArea, "Packet blocked by RL prevention system\n");
-    //         return;
-    //     }
-
-    //     // Continuer avec la détection normale si le paquet est autorisé
-    //     if (shouldDisplayPacket(packetData)) {
-    //         SwingUtilities.invokeLater(() -> {
-    //             packetArea.append(formatPacketData(packetData) + "\n");
-    //             packetArea.setCaretPosition(packetArea.getDocument().getLength());
-    //         });
-    //         updateStatistics(packetData);
-    //     }
-    // }
-
     private void stopCapture() {
         if (packetReader != null) {
             isCapturing = false;
@@ -739,7 +707,7 @@ public class Gui extends JFrame {
             }
         });
     }
-
+////////////////////////////////
     /**
      * Récupère le dernier paquet affiché
      * 
@@ -756,7 +724,8 @@ public class Gui extends JFrame {
 
         simulationExecutor = Executors.newScheduledThreadPool(1);
         simulationExecutor.scheduleAtFixedRate(() -> {
-            for (int i = 0; i < 10; i++) {
+            // Simuler 25 paquets par fenêtre (au-dessus du seuil de 20)
+            for (int i = 0; i < 25; i++) {
                 Map<String, String> packet = new HashMap<>();
                 packet.put("srcIP", "192.168.1." + random.nextInt(255));
                 packet.put("destIP", "192.168.1.1");
@@ -766,10 +735,9 @@ public class Gui extends JFrame {
                 packet.put("flags", "SYN");
                 String ddosPayload = "GET / HTTP/1.1\r\nHost: target.com\r\n\r\n";
                 packet.put("data", ddosPayload);
-                packet.put("payload", ddosPayload); // Pour matcher les règles qui attendent 'payload'
                 updateDisplay(packet);
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 0, 4, TimeUnit.SECONDS); // Légèrement plus rapide que la fenêtre de 5 secondes
     }
 
     private void simulateSqlInjection() {
@@ -792,6 +760,8 @@ public class Gui extends JFrame {
 
         simulationExecutor = Executors.newScheduledThreadPool(1);
         simulationExecutor.scheduleAtFixedRate(() -> {
+            // Simuler 6 tentatives de scan (au-dessus du seuil de 5)
+            for (int i = 0; i < 6; i++) {
             Map<String, String> packet = new HashMap<>();
             packet.put("srcIP", "192.168.1." + random.nextInt(255));
             packet.put("destIP", "192.168.1.1");
@@ -799,8 +769,53 @@ public class Gui extends JFrame {
             packet.put("destPort", String.valueOf(random.nextInt(1024)));
             packet.put("protocol", "TCP");
             packet.put("flags", "SYN");
-
             updateDisplay(packet);
-        }, 0, 100, TimeUnit.MILLISECONDS);
+            }
+        }, 0, 25, TimeUnit.SECONDS); // Légèrement plus rapide que la fenêtre de 30 secondes
     }
 }
+    //     private void sendEmailAlert(Alert alert) {
+//         try {
+//             Properties props = new Properties();
+//             props.put("mail.smtp.host", "smtp.gmail.com");
+//             props.put("mail.smtp.socketFactory.port", "465");
+//             props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+//             props.put("mail.smtp.auth", "true");
+//             props.put("mail.smtp.port", "465");
+
+//             Session session = Session.getDefaultInstance(props, new Authenticator() {
+//                 @Override
+//                 protected PasswordAuthentication getPasswordAuthentication() {
+//                     return new PasswordAuthentication("rhouzali307@gmail.com", "fjlj mshk dwda meon");
+//                 }
+//             });
+
+//             Message message = new MimeMessage(session);
+//             message.setFrom(new InternetAddress("rhouzali307@gmail.com"));
+//             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("rhouzalis307@gmail.com"));
+//             message.setSubject("IDS Alert: " + alert.getType());
+            
+//             StringBuilder body = new StringBuilder();
+//             body.append("Alert Type: ").append(alert.getType()).append("\n");
+//             body.append("Severity: ").append(alert.getSeverity()).append("\n");
+//             body.append("Message: ").append(alert.getMessage()).append("\n");
+//             body.append("Timestamp: ").append(dateFormat.format(new Date())).append("\n\n");
+            
+//             Map<String, String> packetData = alert.getPacketData();
+//             if (packetData != null) {
+//                 body.append("Packet Details:\n");
+//                 body.append("Source IP: ").append(packetData.get("srcIP")).append("\n");
+//                 body.append("Destination IP: ").append(packetData.get("destIP")).append("\n");
+//                 body.append("Protocol: ").append(packetData.get("protocol")).append("\n");
+//                 body.append("Destination Port: ").append(packetData.get("destPort")).append("\n");
+//             }
+            
+//             message.setText(body.toString());
+//             Transport.send(message);
+            
+//             LOGGER.info("Alert email sent successfully");
+//         } catch (Exception e) {
+//             LOGGER.log(Level.SEVERE, "Error sending alert email", e);
+//         }
+//     }
+// }

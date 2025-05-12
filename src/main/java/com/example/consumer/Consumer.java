@@ -1,6 +1,7 @@
 package com.example.consumer;
 
 import com.example.detection.AnomalyDetector;
+import com.example.detection.Alert;
 import com.example.logging.AlertLogger;
 import com.example.util.RuleEngine;
 import com.example.util.PacketParser;
@@ -48,8 +49,9 @@ public class Consumer implements ConsumerStrategy {
         }
 
         // Vérifier les anomalies
-        if (anomalyDetector.detectAnomaly(packet)) {
-            alertLogger.logAnomaly(anomalyDetector.getLastAnomaly(), packet);
+        Alert anomaly = anomalyDetector.detectAnomaly(packet);
+        if (anomaly != null) {
+            alertLogger.logAnomaly(anomaly, packet);
         }
     }
 

@@ -7,8 +7,11 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class RuleEngine {
+    private static final Logger LOGGER = Logger.getLogger(RuleEngine.class.getName());
     private final List<Rule> rules;
     private final Map<String, List<Rule>> protocolRules;
     private final RuleLoader ruleLoader;
@@ -29,6 +32,8 @@ public class RuleEngine {
         ports.put("dns", 53);
         SERVICE_PORTS = Collections.unmodifiableMap(ports);
     }
+
+    private Rule lastMatchedRule;
 
     public RuleEngine() {
         this.ruleLoader = new RuleLoader();
@@ -59,46 +64,63 @@ public class RuleEngine {
                 String protocol = rule.getProtocol();
                 protocolRules.computeIfAbsent(protocol, k -> new ArrayList<>()).add(rule);
             }
+            LOGGER.info("Loaded " + loadedRules.size() + " rules successfully");
         } catch (Exception e) {
-            System.err.println("Error loading rules: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Error loading rules", e);
         }
     }
 
     public List<Rule> getMatchingRules(Map<String, String> packet) {
-        List<Rule> matches = new ArrayList<>();
-        String protocol = packet.get("protocol");
-        
-        // Get rules for this protocol
-        List<Rule> candidateRules = protocolRules.getOrDefault(protocol, Collections.emptyList());
-        
-        for (Rule rule : candidateRules) {
-            if (matches(packet, rule)) {
-                matches.add(rule);
+        try {
+            if (packet == null || packet.isEmpty()) {
+                LOGGER.warning("Received empty packet data");
+                return Collections.emptyList();
             }
+
+            List<Rule> matches = new ArrayList<>();
+            String protocol = packet.getOrDefault("protocol", "UNKNOWN");
+            
+            // Get rules for this protocol
+            List<Rule> candidateRules = protocolRules.getOrDefault(protocol, Collections.emptyList());
+            
+            for (Rule rule : candidateRules) {
+                if (matches(packet, rule)) {
+                    matches.add(rule);
+                    LOGGER.info("Rule matched: " + rule.getId());
+                }
+            }
+            
+            return matches;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error matching rules", e);
+            return Collections.emptyList();
         }
-        
-        return matches;
     }
 
     private boolean matches(Map<String, String> packet, Rule rule) {
-        // Quick checks first
-        if (!matchesProtocol(packet, rule)) return false;
-        if (!matchesIpAddresses(packet, rule)) return false;
-        if (!matchesPorts(packet, rule)) return false;
-        
-        // More expensive checks
-        if (!matchesFlow(packet, rule)) return false;
-        if (!matchesContent(packet, rule)) return false;
-        if (!matchesFlags(packet, rule)) return false;
-        
-        return true;
+        try {
+            // Quick checks first
+            if (!matchesProtocol(packet, rule)) return false;
+            if (!matchesIpAddresses(packet, rule)) return false;
+            if (!matchesPorts(packet, rule)) return false;
+            
+            // More expensive checks
+            if (!matchesFlow(packet, rule)) return false;
+            if (!matchesContent(packet, rule)) return false;
+            if (!matchesFlags(packet, rule)) return false;
+            
+            return true;
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error matching rule: " + rule.getId(), e);
+            return false;
+        }
     }
     
     private boolean matchesProtocol(Map<String, String> packet, Rule rule) {
         String ruleProtocol = rule.getProtocol();
-        String packetProtocol = packet.get("protocol");
+        String packetProtocol = packet.getOrDefault("protocol", "UNKNOWN");
         
-        if (ruleProtocol == null || packetProtocol == null) return false;
+        if (ruleProtocol == null) return false;
         
         // Handle protocol aliases
         if (ruleProtocol.equalsIgnoreCase("tcp") && 
@@ -111,33 +133,38 @@ public class RuleEngine {
     }
 
     private boolean matchesIpAddresses(Map<String, String> packet, Rule rule) {
-        return matchesIp(packet.get("sourceIp"), rule.getSourceIp()) &&
-               matchesIp(packet.get("destinationIp"), rule.getDestinationIp());
+        return matchesIp(packet.getOrDefault("srcIP", "0.0.0.0"), rule.getSourceIp()) &&
+               matchesIp(packet.getOrDefault("destIP", "0.0.0.0"), rule.getDestinationIp());
     }
     
     private boolean matchesIp(String packetIp, String ruleIp) {
         if (ruleIp == null || ruleIp.equals("any")) return true;
         
-        if (ruleIp.equals("$HOME_NET")) {
-            return isInNetwork(packetIp, homeNet);
-        } else if (ruleIp.equals("$EXTERNAL_NET")) {
-            return isInNetwork(packetIp, externalNet);
+        try {
+            if (ruleIp.equals("$HOME_NET")) {
+                return isInNetwork(packetIp, homeNet);
+            } else if (ruleIp.equals("$EXTERNAL_NET")) {
+                return isInNetwork(packetIp, externalNet);
+            }
+            
+            // Handle CIDR notation
+            Matcher matcher = ipCidrPattern.matcher(ruleIp);
+            if (matcher.matches()) {
+                String ip = matcher.group(1);
+                String cidr = matcher.group(2);
+                return isInNetwork(packetIp, ip + (cidr != null ? "/" + cidr : "/32"));
+            }
+            
+            return ruleIp.equals(packetIp);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error matching IP: " + packetIp + " against " + ruleIp, e);
+            return false;
         }
-        
-        // Handle CIDR notation
-        Matcher matcher = ipCidrPattern.matcher(ruleIp);
-        if (matcher.matches()) {
-            String ip = matcher.group(1);
-            String cidr = matcher.group(2);
-            return isInNetwork(packetIp, ip + (cidr != null ? "/" + cidr : "/32"));
-        }
-        
-        return ruleIp.equals(packetIp);
     }
     
     private boolean matchesPorts(Map<String, String> packet, Rule rule) {
-        return matchesPort(packet.get("sourcePort"), rule.getSourcePort()) &&
-               matchesPort(packet.get("destinationPort"), rule.getDestinationPort());
+        return matchesPort(packet.getOrDefault("srcPort", "0"), rule.getSourcePort()) &&
+               matchesPort(packet.getOrDefault("destPort", "0"), rule.getDestinationPort());
     }
     
     private boolean matchesPort(String packetPort, String rulePort) {
@@ -163,75 +190,89 @@ public class RuleEngine {
                 return port == start;
             }
         } catch (NumberFormatException e) {
-            return false;
+            LOGGER.log(Level.WARNING, "Invalid port number: " + packetPort, e);
         }
         
-                return false;
-            }
+        return false;
+    }
 
     private boolean matchesFlow(Map<String, String> packet, Rule rule) {
         String flow = rule.getOptions().get("flow");
         if (flow == null) return true;
         
-        String[] flowOptions = flow.split(",");
-        for (String option : flowOptions) {
-            option = option.trim();
-            switch (option) {
-                case "established":
-                    if (!isEstablishedConnection(packet)) return false;
-                    break;
-                case "to_server":
-                    if (!isToServer(packet)) return false;
-                    break;
-                case "to_client":
-                    if (!isToClient(packet)) return false;
-                    break;
-                case "stateless":
-                    // No state checking needed
-                    break;
+        try {
+            String[] flowOptions = flow.split(",");
+            for (String option : flowOptions) {
+                option = option.trim();
+                switch (option) {
+                    case "established":
+                        if (!isEstablishedConnection(packet)) return false;
+                        break;
+                    case "to_server":
+                        if (!isToServer(packet)) return false;
+                        break;
+                    case "to_client":
+                        if (!isToClient(packet)) return false;
+                        break;
+                    case "stateless":
+                        // No state checking needed
+                        break;
+                }
             }
+            return true;
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error matching flow", e);
+            return false;
         }
-
-        return true;
     }
     
     private boolean matchesContent(Map<String, String> packet, Rule rule) {
         String content = rule.getOptions().get("content");
         if (content == null) return true;
         
-        String payload = packet.get("payload");
-        if (payload == null) return false;
-        
-        // Handle hex content
-        if (content.startsWith("|") && content.endsWith("|")) {
-            content = content.substring(1, content.length() - 1);
-            // Convert hex string to bytes and compare
-            return payload.contains(hexToString(content));
+        try {
+            String payload = packet.getOrDefault("data", "");
+            if (payload.isEmpty()) return false;
+            
+            // Handle hex content
+            if (content.startsWith("|") && content.endsWith("|")) {
+                content = content.substring(1, content.length() - 1);
+                // Convert hex string to bytes and compare
+                return payload.contains(hexToString(content));
+            }
+            
+            // Handle case sensitivity
+            if (rule.getOptions().containsKey("nocase")) {
+                return payload.toLowerCase().contains(content.toLowerCase());
+            }
+            
+            return payload.contains(content);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error matching content", e);
+            return false;
         }
-        
-        // Handle case sensitivity
-        if (rule.getOptions().containsKey("nocase")) {
-            return payload.toLowerCase().contains(content.toLowerCase());
-        }
-        
-        return payload.contains(content);
     }
     
     private boolean matchesFlags(Map<String, String> packet, Rule rule) {
         String flags = rule.getOptions().get("flags");
         if (flags == null) return true;
         
-        String packetFlags = packet.get("tcpFlags");
-        if (packetFlags == null) return false;
-        
-        // Convert flag strings to sets for comparison
-        Set<Character> ruleFlags = new HashSet<>();
-        Set<Character> pktFlags = new HashSet<>();
-        
-        for (char flag : flags.toCharArray()) ruleFlags.add(flag);
-        for (char flag : packetFlags.toCharArray()) pktFlags.add(flag);
-        
-        return pktFlags.containsAll(ruleFlags);
+        try {
+            String packetFlags = packet.getOrDefault("tcpFlags", "");
+            if (packetFlags.isEmpty()) return false;
+            
+            // Convert flag strings to sets for comparison
+            Set<Character> ruleFlags = new HashSet<>();
+            Set<Character> pktFlags = new HashSet<>();
+            
+            for (char flag : flags.toCharArray()) ruleFlags.add(flag);
+            for (char flag : packetFlags.toCharArray()) pktFlags.add(flag);
+            
+            return pktFlags.containsAll(ruleFlags);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error matching flags", e);
+            return false;
+        }
     }
 
     private boolean isInNetwork(String ip, String network) {
@@ -248,46 +289,91 @@ public class RuleEngine {
                        ((addr[2] & 0xFF) << 8)  |
                        ((addr[3] & 0xFF));
                        
-            int networkInt = ((subnet[0] & 0xFF) << 24) |
-                           ((subnet[1] & 0xFF) << 16) |
-                           ((subnet[2] & 0xFF) << 8)  |
-                           ((subnet[3] & 0xFF));
-                           
-            return (ipInt & mask) == (networkInt & mask);
-        } catch (UnknownHostException e) {
+            int subnetInt = ((subnet[0] & 0xFF) << 24) |
+                          ((subnet[1] & 0xFF) << 16) |
+                          ((subnet[2] & 0xFF) << 8)  |
+                          ((subnet[3] & 0xFF));
+                          
+            return (ipInt & mask) == (subnetInt & mask);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error checking network membership", e);
             return false;
         }
     }
 
     private boolean isEstablishedConnection(Map<String, String> packet) {
-        String flags = packet.get("tcpFlags");
-        return flags != null && flags.contains("A"); // ACK flag
+        String flags = packet.getOrDefault("tcpFlags", "");
+        return flags.contains("A") && (flags.contains("S") || flags.contains("F"));
     }
 
     private boolean isToServer(Map<String, String> packet) {
+        String destPort = packet.getOrDefault("destPort", "0");
         try {
-            int port = Integer.parseInt(packet.get("destinationPort"));
-            return port < 1024 || SERVICE_PORTS.containsValue(port);
+            int port = Integer.parseInt(destPort);
+            return port < 1024;
         } catch (NumberFormatException e) {
             return false;
         }
     }
 
     private boolean isToClient(Map<String, String> packet) {
+        String srcPort = packet.getOrDefault("srcPort", "0");
         try {
-            int port = Integer.parseInt(packet.get("sourcePort"));
-            return port < 1024 || SERVICE_PORTS.containsValue(port);
+            int port = Integer.parseInt(srcPort);
+            return port < 1024;
         } catch (NumberFormatException e) {
             return false;
         }
     }
-    
+
     private String hexToString(String hex) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < hex.length(); i += 2) {
-            String str = hex.substring(i, i + 2);
-            sb.append((char) Integer.parseInt(str, 16));
+        try {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < hex.length(); i += 2) {
+                String hexByte = hex.substring(i, i + 2);
+                sb.append((char) Integer.parseInt(hexByte, 16));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error converting hex to string", e);
+            return "";
         }
-        return sb.toString();
+    }
+
+    public void addRule(Rule rule) {
+        if (rule != null) {
+            String protocol = rule.getProtocol();
+            protocolRules.computeIfAbsent(protocol, k -> new ArrayList<>()).add(rule);
+            rules.add(rule);
+        }
+    }
+
+    public void setRules(List<Rule> newRules) {
+        rules.clear();
+        protocolRules.clear();
+        if (newRules != null) {
+            rules.addAll(newRules);
+            for (Rule rule : newRules) {
+                String protocol = rule.getProtocol();
+                protocolRules.computeIfAbsent(protocol, k -> new ArrayList<>()).add(rule);
+            }
+        }
+    }
+
+    public List<Rule> getRules() {
+        return Collections.unmodifiableList(rules);
+    }
+
+    public boolean matches(Map<String, String> packet) {
+        List<Rule> matches = getMatchingRules(packet);
+        if (!matches.isEmpty()) {
+            lastMatchedRule = matches.get(0);
+            return true;
+        }
+        return false;
+    }
+
+    public Rule getLastMatchedRule() {
+        return lastMatchedRule;
     }
 } 

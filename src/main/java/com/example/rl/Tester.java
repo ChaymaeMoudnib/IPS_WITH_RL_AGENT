@@ -7,7 +7,7 @@ import org.pcap4j.packet.Packet;
 public class Tester {
     public static void main(String[] args) {
         try {
-            PacketReader reader = PacketReaderFactory.createPacketReader("offline", "test.pcapng");
+            PacketReader reader = PacketReaderFactory.createPacketReader("offline", "test_cap.pcapng");
             Environment env = new Environment();
             RLAgent agent = new RLAgent();
 

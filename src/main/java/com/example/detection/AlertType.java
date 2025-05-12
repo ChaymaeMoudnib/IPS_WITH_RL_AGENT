@@ -7,7 +7,7 @@ public enum AlertType {
     ICMP_SCAN("ICMP Scan"),
     
     // Alertes de force brute
-    BRUTE_FORCE("Brute Force Attempt"),
+    BRUTE_FORCE("Brute Force"),
     SSH_BRUTE_FORCE("SSH Brute Force"),
     SMB_BRUTE_FORCE("SMB Brute Force"),
     RDP_BRUTE_FORCE("RDP Brute Force"),
@@ -35,7 +35,10 @@ public enum AlertType {
     // Alertes de reconnaissance
     RECONNAISSANCE("Reconnaissance"),
     SERVER_SCAN("Server Scan"),
-    VULNERABILITY_SCAN("Vulnerability Scan");
+    VULNERABILITY_SCAN("Vulnerability Scan"),
+    
+    // Nouvelle constante
+    RULE_MATCH("Rule Match");
 
     private final String description;
 

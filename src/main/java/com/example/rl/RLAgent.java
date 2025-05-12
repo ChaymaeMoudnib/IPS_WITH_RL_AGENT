@@ -16,8 +16,8 @@ public class RLAgent {
     private static final double EPSILON_DECAY = 0.995;
     private static final double LEARNING_RATE = 0.1;
     private static final double DISCOUNT_FACTOR = 0.9;
-    private static final double MIN_CONFIDENCE = 0.3;
-    private static final int CONFIDENCE_VISITS_THRESHOLD = 10;
+    private static final double MIN_CONFIDENCE = 0.5;
+    private static final int CONFIDENCE_VISITS_THRESHOLD = 5;
     
     private double epsilon;
     private Action lastAction;
@@ -32,9 +32,21 @@ public class RLAgent {
     }
     
     public void train(String csvFile) {
+        int totalLines = 0;
+        int processedLines = 0;
+        
+        // First pass: count total lines
         try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
-            String line;
             br.readLine(); // Skip header
+            while (br.readLine() != null) totalLines++;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to count lines in CSV: " + e.getMessage());
+        }
+        
+        // Second pass: actual training
+        try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+            br.readLine(); // Skip header
+            String line;
             
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split(",");
@@ -50,39 +62,71 @@ public class RLAgent {
                 
                 boolean isAllowed = Boolean.parseBoolean(parts[5]);
                 double reward = calculateReward(isAllowed, parts);
+                
+                // Enhanced training with multiple updates for important states
                 updateQValue(state, isAllowed, reward);
+                
+                // Additional training for critical states
+                if (isCriticalState(state)) {
+                    // Extra training iterations for critical states
+                    for (int i = 0; i < 3; i++) {
+                        updateQValue(state, isAllowed, reward * 1.5);
+                    }
+                }
                 
                 // Update state visits
                 stateVisits.merge(state, 1, Integer::sum);
                 
-                // Decay epsilon
-                epsilon = Math.max(MIN_EPSILON, epsilon * EPSILON_DECAY);
+                // Adaptive epsilon decay
+                processedLines++;
+                double progress = (double) processedLines / totalLines;
+                epsilon = Math.max(MIN_EPSILON, INITIAL_EPSILON * Math.pow(EPSILON_DECAY, progress * 100));
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to train from CSV: " + e.getMessage());
         }
     }
     
+    private boolean isCriticalState(State state) {
+        // Define critical states that need more training
+        String protocol = state.getProtocol();
+        String destPort = state.getDestPort();
+        
+        // Critical ports and protocols
+        return protocol.equals("TCP") && (
+            destPort.equals("80") ||    // HTTP
+            destPort.equals("443") ||   // HTTPS
+            destPort.equals("22") ||    // SSH
+            destPort.equals("3389")     // RDP
+        );
+    }
+    
     private double calculateReward(boolean isAllowed, String[] parts) {
         double baseReward = isAllowed ? 1.0 : -1.0;
         
-        // Additional reward factors
+        // Enhanced reward calculation
         if (parts.length > 6) {
-            // Consider severity if available
             String severity = parts[6];
             if (severity != null) {
                 switch (severity.toLowerCase()) {
                     case "high":
-                        baseReward *= 2.0;
+                        baseReward *= 2.5;  // Increased from 2.0
                         break;
                     case "medium":
-                        baseReward *= 1.5;
+                        baseReward *= 2.0;  // Increased from 1.5
                         break;
                     case "low":
-                        baseReward *= 1.0;
+                        baseReward *= 1.5;  // Increased from 1.0
                         break;
                 }
             }
+        }
+        
+        // Additional reward for consistent decisions
+        State state = new State(parts[0], parts[1], parts[2], parts[3], parts[4]);
+        int visits = stateVisits.getOrDefault(state, 0);
+        if (visits > CONFIDENCE_VISITS_THRESHOLD) {
+            baseReward *= 1.2;  // 20% bonus for well-known states
         }
         
         return baseReward;
@@ -152,10 +196,19 @@ public class RLAgent {
         }
         
         double qValue = stateValues.get(action);
+        // Faster confidence building with visits
         double visitFactor = Math.min(1.0, visits / (double)CONFIDENCE_VISITS_THRESHOLD);
-        double baseConfidence = Math.abs(qValue) / (1.0 + Math.abs(qValue)); // Sigmoid-like normalization
         
-        return MIN_CONFIDENCE + (1.0 - MIN_CONFIDENCE) * baseConfidence * visitFactor;
+        // Improved confidence calculation
+        double baseConfidence = Math.abs(qValue) / (1.0 + Math.abs(qValue));
+        double confidence = MIN_CONFIDENCE + (1.0 - MIN_CONFIDENCE) * baseConfidence * visitFactor;
+        
+        // Add bonus for consistent decisions
+        if (visits > CONFIDENCE_VISITS_THRESHOLD) {
+            confidence += 0.1;  // Small bonus for well-known states
+        }
+        
+        return Math.min(1.0, confidence);  // Ensure confidence doesn't exceed 1.0
     }
     
     private void updateCounter(boolean allowed) {

@@ -11,48 +11,91 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
+import java.util.logging.Level;
+import java.nio.file.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.Arrays;
 
 public class AlertLogger {
+    private static final Logger LOGGER = Logger.getLogger(AlertLogger.class.getName());
     private static final String LOG_DIR = "logs";
-    private FileWriter logWriter;
+    private static final int MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final int MAX_LOG_FILES = 10;
+    
     private final SimpleDateFormat dateFormat;
     private final ExecutorService executor;
-    private static final int MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB
     private final EmailService emailService;
+    private final AtomicLong currentLogSize;
+    private FileWriter logWriter;
+    private String currentLogFile;
 
     public AlertLogger() throws IOException {
         createLogDirectory();
-        String logFile = LOG_DIR + "/ids_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".log";
-        this.logWriter = new FileWriter(logFile, true);
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         this.executor = Executors.newSingleThreadExecutor();
         this.emailService = EmailService.getInstance();
+        this.currentLogSize = new AtomicLong(0);
+        initializeLogFile();
     }
 
-    private void createLogDirectory() {
-        File dir = new File(LOG_DIR);
-        if (!dir.exists()) {
-            dir.mkdirs();
+    private void createLogDirectory() throws IOException {
+        try {
+            Files.createDirectories(Paths.get(LOG_DIR));
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to create log directory", e);
+            throw e;
+        }
+    }
+
+    private void initializeLogFile() throws IOException {
+        currentLogFile = LOG_DIR + "/ids_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".log";
+        this.logWriter = new FileWriter(currentLogFile, true);
+        this.currentLogSize.set(new File(currentLogFile).length());
+        cleanupOldLogs();
+    }
+
+    private void cleanupOldLogs() {
+        try {
+            File logDir = new File(LOG_DIR);
+            File[] logFiles = logDir.listFiles((dir, name) -> name.startsWith("ids_") && name.endsWith(".log"));
+            
+            if (logFiles != null && logFiles.length > MAX_LOG_FILES) {
+                Arrays.sort(logFiles, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
+                for (int i = MAX_LOG_FILES; i < logFiles.length; i++) {
+                    logFiles[i].delete();
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to cleanup old logs", e);
         }
     }
 
     public void logAlert(Rule rule, Map<String, String> packet) {
-        String severity = rule.getOption("severity");
-        String message = rule.getOption("msg");
-        
-        Alert alert = new Alert(
-            AlertType.valueOf(severity.toUpperCase()),
-            Severity.valueOf(severity.toUpperCase()),
-            message,
-            packet
-        );
-        
-        logAlert(alert);
+        try {
+            String severity = rule.getOption("severity");
+            String message = rule.getOption("msg");
+            
+            Alert alert = new Alert(
+                AlertType.valueOf(severity.toUpperCase()),
+                Severity.valueOf(severity.toUpperCase()),
+                message,
+                packet
+            );
+            
+            logAlert(alert);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to log alert from rule", e);
+        }
     }
 
     public void logAnomaly(Alert anomaly, Map<String, String> packet) {
-        anomaly.setPacketData(packet);
-        logAlert(anomaly);
+        try {
+            anomaly.setPacketData(packet);
+            logAlert(anomaly);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to log anomaly", e);
+        }
     }
 
     private void logAlert(Alert alert) {
@@ -62,15 +105,18 @@ public class AlertLogger {
                 synchronized (logWriter) {
                     logWriter.write(logEntry);
                     logWriter.flush();
-                    checkLogRotation();
+                    currentLogSize.addAndGet(logEntry.getBytes().length);
+                    
+                    if (currentLogSize.get() > MAX_LOG_SIZE) {
+                        rotateLog();
+                    }
                 }
 
-                // Send email for critical and high severity alerts
                 if (alert.getSeverity() == Severity.CRITICAL || alert.getSeverity() == Severity.HIGH) {
                     emailService.sendAlertEmail(alert);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Failed to write log entry", e);
             }
         });
     }
@@ -89,34 +135,38 @@ public class AlertLogger {
 
         if (alert.getPacketData() != null) {
             sb.append("Packet Details:\n");
-            for (Map.Entry<String, String> entry : alert.getPacketData().entrySet()) {
+            alert.getPacketData().forEach((key, value) -> 
                 sb.append("  ")
-                  .append(entry.getKey())
+                  .append(key)
                   .append(": ")
-                  .append(entry.getValue())
-                  .append("\n");
-            }
+                  .append(value)
+                  .append("\n")
+            );
         }
         sb.append("\n");
         return sb.toString();
     }
 
-    private void checkLogRotation() throws IOException {
-        File logFile = new File(logWriter.toString());
-        if (logFile.length() > MAX_LOG_SIZE) {
-            String newLogFile = LOG_DIR + "/ids_" + dateFormat.format(new Date()) + "_" + 
-                              System.currentTimeMillis() + ".log";
-            logWriter.close();
-            this.logWriter = new FileWriter(newLogFile, true);
-        }
+    private void rotateLog() throws IOException {
+        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String newLogFile = LOG_DIR + "/ids_" + timestamp + ".log";
+        
+        logWriter.close();
+        this.logWriter = new FileWriter(newLogFile, true);
+        this.currentLogFile = newLogFile;
+        this.currentLogSize.set(0);
+        
+        cleanupOldLogs();
     }
 
     public void close() {
         executor.shutdown();
         try {
-            logWriter.close();
+            if (logWriter != null) {
+                logWriter.close();
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Error closing log writer", e);
         }
     }
 } 
