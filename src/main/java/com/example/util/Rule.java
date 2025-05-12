@@ -19,61 +19,66 @@ public class Rule {
     }
     
     public boolean matches(Map<String, String> packetData) {
-        String protocol = packetData.get("protocol");
-        String srcIp = packetData.get("srcIP");
-        String srcPort = packetData.get("srcPort");
-        String dstIp = packetData.get("destIP");
-        String dstPort = packetData.get("destPort");
-        String data = packetData.get("data");
-        String flags = packetData.get("flags");
+        if (packetData == null) {
+            return false;
+        }
 
         // Vérifier le protocole
-        if (!this.protocol.equals("any") && !this.protocol.equals(protocol)) {
+        String protocol = packetData.get("protocol");
+        if (protocol == null || (!this.protocol.equals("any") && !this.protocol.equalsIgnoreCase(protocol))) {
             return false;
         }
 
-        // Vérifier l'IP source si spécifiée
-        if (!this.sourceIp.equals("any") && !this.sourceIp.equals(srcIp)) {
+        // Vérifier l'IP source
+        String srcIp = packetData.get("srcIP");
+        if (srcIp != null && !this.sourceIp.equals("any") && !this.sourceIp.equals(srcIp)) {
             return false;
         }
 
-        // Vérifier le port source si spécifié
-        if (!this.sourcePort.equals("any") && !this.sourcePort.equals(srcPort)) {
+        // Vérifier le port source
+        String srcPort = packetData.get("srcPort");
+        if (srcPort != null && !this.sourcePort.equals("any") && !this.sourcePort.equals(srcPort)) {
             return false;
         }
 
-        // Vérifier l'IP destination si spécifiée
-        if (!this.destinationIp.equals("any") && !this.destinationIp.equals(dstIp)) {
+        // Vérifier l'IP destination
+        String dstIp = packetData.get("destIP");
+        if (dstIp != null && !this.destinationIp.equals("any") && !this.destinationIp.equals(dstIp)) {
             return false;
         }
 
-        // Vérifier le port destination si spécifié
-        if (!this.destinationPort.equals("any") && !this.destinationPort.equals(dstPort)) {
+        // Vérifier le port destination
+        String dstPort = packetData.get("destPort");
+        if (dstPort != null && !this.destinationPort.equals("any") && !this.destinationPort.equals(dstPort)) {
             return false;
         }
 
         // Vérifier le contenu si spécifié
         String content = this.options.get("content");
         if (content != null) {
-            if (data == null) {
+            String data = packetData.get("data");
+            String payload = packetData.get("payload");
+            boolean nocase = "true".equalsIgnoreCase(this.options.get("nocase"));
+            
+            if (data == null && payload == null) {
                 return false;
             }
-            boolean nocase = "true".equalsIgnoreCase(this.options.get("nocase"));
-            if (nocase) {
-                if (!data.toLowerCase().contains(content.toLowerCase())) {
-                    return false;
-                }
-            } else {
-                if (!data.contains(content)) {
-                    return false;
-                }
+            
+            boolean dataMatches = false;
+            if (data != null) {
+                dataMatches = nocase ? 
+                    data.toLowerCase().contains(content.toLowerCase()) :
+                    data.contains(content);
             }
-        }
-
-        // Vérifier les flags TCP si spécifiés
-        String ruleFlags = this.options.get("flags");
-        if (ruleFlags != null) {
-            if (flags == null || !containsAllFlags(flags, ruleFlags)) {
+            
+            boolean payloadMatches = false;
+            if (payload != null) {
+                payloadMatches = nocase ?
+                    payload.toLowerCase().contains(content.toLowerCase()) :
+                    payload.contains(content);
+            }
+            
+            if (!dataMatches && !payloadMatches) {
                 return false;
             }
         }

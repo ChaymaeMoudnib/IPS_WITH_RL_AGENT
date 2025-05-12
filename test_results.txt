@@ -1,0 +1,12 @@
+=== Test Results ===
+Total Packets Tested: 1399
+True Positives: 213
+False Positives: 20
+True Negatives: 61
+False Negatives: 1105
+
+Performance Metrics:
+Accuracy: 19,59%
+Precision: 91,42%
+Recall: 16,16%
+F1 Score: 27,47%

@@ -8,12 +8,16 @@ import java.util.regex.Pattern;
 import java.util.HashMap;
 import java.io.IOException;
 import java.util.Set;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 public class RuleEngine {
+    private static final Logger LOGGER = Logger.getLogger(RuleEngine.class.getName());
     private List<Rule> rules;
     private Rule lastMatchedRule;
     private Map<String, Integer> thresholdCounts;
     private Map<String, Long> thresholdTimestamps;
+    private boolean debugMode = false;
 
     private static final Pattern RULE_PATTERN = Pattern.compile(
             "^(TCP|UDP|ICMP)\\s+" +
@@ -36,6 +40,9 @@ public class RuleEngine {
     public void addRule(Rule rule) {
         if (rule != null && RulesValidation.validateRule(rule)) {
             rules.add(rule);
+            if (debugMode) {
+                LOGGER.fine("Added rule: " + rule.getId());
+            }
         }
     }
 
@@ -169,12 +176,20 @@ public class RuleEngine {
      */
     public void clearRules() {
         rules.clear();
+        if (debugMode) {
+            LOGGER.fine("Rules cleared");
+        }
     }
 
     public boolean matches(Map<String, String> packetData) {
+        if (packetData == null) return false;
+        
         for (Rule rule : rules) {
             if (rule.matches(packetData)) {
                 lastMatchedRule = rule;
+                if (debugMode) {
+                    LOGGER.fine("Rule matched: " + rule.getId());
+                }
                 return true;
             }
         }
@@ -267,7 +282,14 @@ public class RuleEngine {
         return ruleCount; // Retournez le nombre de règles chargées
     }
 
-    public void setRules(List<Rule> rules) {
-        this.rules = new ArrayList<>(rules);
+    public void setRules(List<Rule> newRules) {
+        rules = new ArrayList<>(newRules);
+        if (debugMode) {
+            LOGGER.fine("Set " + newRules.size() + " rules");
+        }
+    }
+
+    public void setDebugMode(boolean enabled) {
+        this.debugMode = enabled;
     }
 }

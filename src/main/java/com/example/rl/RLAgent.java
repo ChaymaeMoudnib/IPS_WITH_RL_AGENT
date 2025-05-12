@@ -132,7 +132,7 @@ public class RLAgent {
         return baseReward;
     }
     
-    private void updateQValue(State state, boolean action, double reward) {
+    public void updateQValue(State state, boolean action, double reward) {
         Map<Boolean, Double> stateValues = qTable.computeIfAbsent(state, k -> new HashMap<>());
         double oldValue = stateValues.getOrDefault(action, 0.0);
         
@@ -235,5 +235,33 @@ public class RLAgent {
     public void resetCounters() {
         allowedCount = 0;
         blockedCount = 0;
+    }
+
+    public void saveModel(String filePath) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
+            // Save all model state
+            oos.writeObject(qTable);
+            oos.writeObject(stateVisits);
+            oos.writeDouble(epsilon);
+            oos.writeDouble(currentConfidence);
+            oos.writeInt(allowedCount);
+            oos.writeInt(blockedCount);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save model: " + e.getMessage());
+        }
+    }
+
+    public void loadModel(String filePath) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
+            // Load all model state
+            qTable = (Map<State, Map<Boolean, Double>>) ois.readObject();
+            stateVisits = (Map<State, Integer>) ois.readObject();
+            epsilon = ois.readDouble();
+            currentConfidence = ois.readDouble();
+            allowedCount = ois.readInt();
+            blockedCount = ois.readInt();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to load model: " + e.getMessage());
+        }
     }
 }
