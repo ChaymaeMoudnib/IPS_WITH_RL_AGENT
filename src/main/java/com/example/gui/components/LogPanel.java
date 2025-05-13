@@ -13,43 +13,53 @@ import com.example.detection.Severity;
 public class LogPanel extends JPanel {
     private JTextPane logArea;
     private JLabel logCountLabel;
+    private JLabel headerLabel;
     private int logCount = 0;
     private static final String LOG_DIR = "logs";
     private FileWriter logWriter;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public LogPanel() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder("Logs & Alerts"),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        setLayout(new BorderLayout(0, 12));
+        setBackground(Color.WHITE);
+        setBorder(new CompoundBorder(
+            new LineBorder(new Color(230, 230, 230), 1, true),
+            new EmptyBorder(18, 18, 18, 18)
         ));
-        setBackground(new Color(245, 245, 245));
         initializeComponents();
         setupLayout();
         createLogDirectory();
     }
 
     private void initializeComponents() {
+        headerLabel = new JLabel("Logs & Alerts");
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        headerLabel.setForeground(new Color(33, 97, 140));
+        headerLabel.setBorder(new MatteBorder(0, 0, 2, 0, new Color(33, 97, 140)));
+
         logArea = new JTextPane();
         logArea.setEditable(false);
-        logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        logArea.setBackground(new Color(250, 250, 250));
-        logArea.setMargin(new Insets(5, 5, 5, 5));
+        logArea.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        logArea.setBackground(new Color(248, 249, 251));
+        logArea.setMargin(new Insets(8, 8, 8, 8));
+        logArea.setBorder(BorderFactory.createEmptyBorder());
 
         logCountLabel = new JLabel("Logs: 0");
-        logCountLabel.setFont(new Font("Arial", Font.BOLD, 12));
-        logCountLabel.setForeground(new Color(0, 100, 0));
+        logCountLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        logCountLabel.setForeground(new Color(0, 150, 0));
+        logCountLabel.setBorder(new EmptyBorder(0, 0, 0, 0));
     }
 
     private void setupLayout() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.add(headerLabel, BorderLayout.WEST);
+        headerPanel.add(logCountLabel, BorderLayout.EAST);
+
         JScrollPane logScroll = new JScrollPane(logArea);
         logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        logScroll.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        headerPanel.setBackground(new Color(245, 245, 245));
-        headerPanel.add(logCountLabel);
+        logScroll.setBorder(BorderFactory.createEmptyBorder());
+        logScroll.getViewport().setBackground(new Color(248, 249, 251));
 
         add(headerPanel, BorderLayout.NORTH);
         add(logScroll, BorderLayout.CENTER);

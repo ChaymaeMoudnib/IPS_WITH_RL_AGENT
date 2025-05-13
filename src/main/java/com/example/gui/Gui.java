@@ -14,6 +14,7 @@ import org.pcap4j.core.Pcaps;
 import org.pcap4j.packet.Packet;
 
 import javax.swing.*;
+import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Map;
@@ -25,7 +26,8 @@ public class Gui extends JFrame {
     private ControlPanel controlPanel;
     private SimulationPanel simulationPanel;
     private PacketDisplayPanel packetDisplayPanel;
-    private StatisticsPanel statisticsPanel;
+    private TrafficStatisticsPanel trafficStatisticsPanel;
+    private RLStatisticsPanel rlStatisticsPanel;
     private LogPanel logPanel;
     private RLDecisionsPanel rlDecisionsPanel;
 
@@ -37,23 +39,61 @@ public class Gui extends JFrame {
     private AtomicInteger allowedCount = new AtomicInteger(0);
     private AtomicInteger blockedCount = new AtomicInteger(0);
 
+    private static final Color PRIMARY_BLUE = new Color(33, 97, 140);
+    private static final Color LIGHT_BLUE = new Color(174, 214, 241);
+    private static final Color PANEL_BG = new Color(236, 245, 251);
+    private static final Color BORDER_BLUE = new Color(52, 152, 219);
+    private static final Font HEADER_FONT = new Font("Segoe UI", Font.BOLD, 18);
+    private static final Font LABEL_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+    private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 13);
+
     public Gui() {
         setTitle("Network Intrusion Detection System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
         setLocationRelativeTo(null);
-
+        setModernBlueTheme();
         initializeComponents();
         setupLayout();
         setupEventListeners();
         initializeSystems();
     }
 
+    private void setModernBlueTheme() {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            // fallback
+        }
+        getContentPane().setBackground(PANEL_BG);
+        // Set global UI colors
+        UIManager.put("Panel.background", PANEL_BG);
+        UIManager.put("Button.background", LIGHT_BLUE);
+        UIManager.put("Button.foreground", PRIMARY_BLUE);
+        UIManager.put("Button.font", BUTTON_FONT);
+        UIManager.put("Label.foreground", PRIMARY_BLUE);
+        UIManager.put("Label.font", LABEL_FONT);
+        UIManager.put("TitledBorder.border", BorderFactory.createLineBorder(BORDER_BLUE, 2));
+        UIManager.put("TitledBorder.titleColor", PRIMARY_BLUE);
+        UIManager.put("TitledBorder.font", HEADER_FONT);
+        UIManager.put("TextArea.background", Color.WHITE);
+        UIManager.put("TextArea.foreground", new Color(30, 30, 30));
+        UIManager.put("TextArea.font", LABEL_FONT);
+        UIManager.put("ScrollPane.border", BorderFactory.createLineBorder(BORDER_BLUE, 1));
+        UIManager.put("ComboBox.background", LIGHT_BLUE);
+        UIManager.put("ComboBox.foreground", PRIMARY_BLUE);
+        UIManager.put("ComboBox.font", LABEL_FONT);
+        UIManager.put("CheckBox.background", PANEL_BG);
+        UIManager.put("CheckBox.foreground", PRIMARY_BLUE);
+        UIManager.put("CheckBox.font", LABEL_FONT);
+    }
+
     private void initializeComponents() {
         controlPanel = new ControlPanel();
         simulationPanel = new SimulationPanel();
         packetDisplayPanel = new PacketDisplayPanel();
-        statisticsPanel = new StatisticsPanel();
+        trafficStatisticsPanel = new TrafficStatisticsPanel();
+        rlStatisticsPanel = new RLStatisticsPanel();
         logPanel = new LogPanel();
         rlDecisionsPanel = new RLDecisionsPanel();
     }
@@ -66,8 +106,14 @@ public class Gui extends JFrame {
         topPanel.add(controlPanel, BorderLayout.CENTER);
         topPanel.add(simulationPanel, BorderLayout.SOUTH);
 
-        // Middle panel with packet display and statistics
-        JSplitPane middleSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, packetDisplayPanel, statisticsPanel);
+        // Middle panel with packet display and statistics (split into two)
+        JSplitPane statsSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, trafficStatisticsPanel, rlStatisticsPanel);
+        statsSplitPane.setResizeWeight(0.5);
+        statsSplitPane.setDividerLocation(0.5);
+        statsSplitPane.setDividerSize(5);
+        statsSplitPane.setOneTouchExpandable(true);
+
+        JSplitPane middleSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, packetDisplayPanel, statsSplitPane);
         middleSplitPane.setResizeWeight(0.5);
         middleSplitPane.setDividerLocation(0.5);
         middleSplitPane.setDividerSize(5);
@@ -94,7 +140,8 @@ public class Gui extends JFrame {
         // Set minimum sizes for panels
         Dimension minSize = new Dimension(400, 200);
         packetDisplayPanel.setMinimumSize(minSize);
-        statisticsPanel.setMinimumSize(minSize);
+        trafficStatisticsPanel.setMinimumSize(minSize);
+        rlStatisticsPanel.setMinimumSize(minSize);
         logPanel.setMinimumSize(minSize);
         rlDecisionsPanel.setMinimumSize(minSize);
     }
@@ -204,15 +251,15 @@ public class Gui extends JFrame {
             // Update packet display
             packetDisplayPanel.appendPacket(packetData);
 
-            // Update statistics
-            statisticsPanel.updateStatistics(packetData);
+            // Update traffic statistics
+            trafficStatisticsPanel.updateStatistics(packetData);
 
             // Check rules
             boolean ruleMatch = ruleEngine.matches(packetData);
             if (ruleMatch) {
                 Alert alert = ruleEngine.getLastAlert();
                 logPanel.displayAlert(alert);
-                statisticsPanel.incrementAlertCount();
+                trafficStatisticsPanel.incrementAlertCount();
             }
 
             // RL decision if enabled
@@ -242,7 +289,7 @@ public class Gui extends JFrame {
                 rlStats.put("allowedCount", allowedCount.get());
                 rlStats.put("blockedCount", blockedCount.get());
                 rlStats.put("accuracy", calculateAccuracy());
-                statisticsPanel.updateRLStats(rlStats);
+                rlStatisticsPanel.updateRLStats(rlStats);
             }
         } catch (Exception e) {
             logPanel.appendText("Error processing packet data: " + e.getMessage() + "\n");

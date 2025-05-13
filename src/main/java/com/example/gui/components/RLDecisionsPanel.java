@@ -7,39 +7,49 @@ import java.awt.*;
 public class RLDecisionsPanel extends JPanel {
     private JTextPane rlDecisionsArea;
     private JLabel decisionCountLabel;
+    private JLabel headerLabel;
     private int decisionCount = 0;
 
     public RLDecisionsPanel() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder("RL Prevention Decisions"),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        setLayout(new BorderLayout(0, 12));
+        setBackground(Color.WHITE);
+        setBorder(new CompoundBorder(
+            new LineBorder(new Color(230, 230, 230), 1, true),
+            new EmptyBorder(18, 18, 18, 18)
         ));
-        setBackground(new Color(245, 245, 245));
         initializeComponents();
         setupLayout();
     }
 
     private void initializeComponents() {
+        headerLabel = new JLabel("RL Prevention Decisions");
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        headerLabel.setForeground(new Color(33, 97, 140));
+        headerLabel.setBorder(new MatteBorder(0, 0, 2, 0, new Color(33, 97, 140)));
+
         rlDecisionsArea = new JTextPane();
         rlDecisionsArea.setEditable(false);
-        rlDecisionsArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        rlDecisionsArea.setBackground(new Color(250, 250, 250));
-        rlDecisionsArea.setMargin(new Insets(5, 5, 5, 5));
+        rlDecisionsArea.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        rlDecisionsArea.setBackground(new Color(248, 249, 251));
+        rlDecisionsArea.setMargin(new Insets(8, 8, 8, 8));
+        rlDecisionsArea.setBorder(BorderFactory.createEmptyBorder());
 
         decisionCountLabel = new JLabel("Decisions: 0");
-        decisionCountLabel.setFont(new Font("Arial", Font.BOLD, 12));
-        decisionCountLabel.setForeground(new Color(0, 100, 0));
+        decisionCountLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        decisionCountLabel.setForeground(new Color(0, 150, 0));
+        decisionCountLabel.setBorder(new EmptyBorder(0, 0, 0, 0));
     }
 
     private void setupLayout() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+        headerPanel.add(headerLabel, BorderLayout.WEST);
+        headerPanel.add(decisionCountLabel, BorderLayout.EAST);
+
         JScrollPane rlScroll = new JScrollPane(rlDecisionsArea);
         rlScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        rlScroll.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        headerPanel.setBackground(new Color(245, 245, 245));
-        headerPanel.add(decisionCountLabel);
+        rlScroll.setBorder(BorderFactory.createEmptyBorder());
+        rlScroll.getViewport().setBackground(new Color(248, 249, 251));
 
         add(headerPanel, BorderLayout.NORTH);
         add(rlScroll, BorderLayout.CENTER);
