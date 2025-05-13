@@ -184,4 +184,7 @@ public class LogPanel extends JPanel {
             System.err.println("Error closing log file: " + e.getMessage());
         }
     }
+
+    public JLabel getHeaderLabel() { return headerLabel; }
+    public JTextPane getLogArea() { return logArea; }
 } 

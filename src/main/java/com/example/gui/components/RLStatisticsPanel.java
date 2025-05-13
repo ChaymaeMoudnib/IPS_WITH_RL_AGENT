@@ -108,4 +108,8 @@ public class RLStatisticsPanel extends JPanel {
         rlStatsArea.setText("");
         lastUpdateLabel.setText("Last Update: Never");
     }
+
+    public JLabel getHeaderLabel() { return headerLabel; }
+    public JTextArea getStatsArea() { return rlStatsArea; }
+    public JLabel getLastUpdateLabel() { return lastUpdateLabel; }
 } 

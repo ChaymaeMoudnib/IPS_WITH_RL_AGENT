@@ -11,7 +11,7 @@ public class SimulationPanel extends JPanel {
     private JButton testSnortRulesButton;
 
     public SimulationPanel() {
-        setLayout(new GridLayout(2, 2, 5, 5));
+        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createTitledBorder("Attack Simulations"),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
@@ -54,10 +54,15 @@ public class SimulationPanel extends JPanel {
     }
 
     private void setupLayout() {
+        add(Box.createHorizontalStrut(10));
         add(simulateDdosButton);
+        add(Box.createHorizontalStrut(10));
         add(simulateSqlInjectionButton);
+        add(Box.createHorizontalStrut(10));
         add(simulatePortScanButton);
+        add(Box.createHorizontalStrut(10));
         add(testSnortRulesButton);
+        add(Box.createHorizontalGlue());
     }
 
     // Getters for buttons

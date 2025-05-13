@@ -82,4 +82,8 @@ public class PacketDisplayPanel extends JPanel {
     public JTextArea getPacketArea() {
         return packetArea;
     }
+
+    public JLabel getHeaderLabel() {
+        return headerLabel;
+    }
 } 

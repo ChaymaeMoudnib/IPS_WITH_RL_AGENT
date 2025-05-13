@@ -155,6 +155,10 @@ public class Gui extends JFrame {
             String selectedProtocol = (String) controlPanel.getProtocolComboBox().getSelectedItem();
             controlPanel.setSelectedProtocol(selectedProtocol);
         });
+        controlPanel.getDarkModeToggle().addActionListener(e -> {
+            boolean dark = controlPanel.getDarkModeToggle().isSelected();
+            setDarkMode(dark);
+        });
 
         // Simulation Panel events
         simulationPanel.getSimulateDdosButton().addActionListener(e -> simulateXssAttack());
@@ -319,6 +323,112 @@ public class Gui extends JFrame {
     private void testSnortRules() {
         // Implementation for Snort rules testing
         logPanel.appendText("Testing Snort rules...\n");
+    }
+
+    private void setDarkMode(boolean dark) {
+        Color bg = dark ? new Color(34, 40, 49) : Color.WHITE;
+        Color panelBg = dark ? new Color(44, 52, 62) : new Color(248, 249, 251);
+        Color border = dark ? new Color(60, 70, 80) : new Color(230, 230, 230);
+        Color header = dark ? new Color(0, 173, 238) : new Color(33, 97, 140);
+        Color text = dark ? new Color(220, 220, 220) : new Color(30, 30, 30);
+        Color subText = dark ? new Color(180, 180, 180) : new Color(120, 144, 156);
+        Color buttonBg = dark ? new Color(55, 65, 80) : new Color(240, 240, 240);
+        Color buttonFg = dark ? new Color(200, 220, 255) : new Color(33, 97, 140);
+        Color toggleBg = dark ? new Color(0, 173, 238) : new Color(230, 230, 230);
+        Color toggleFg = dark ? Color.WHITE : new Color(33, 97, 140);
+
+        getContentPane().setBackground(bg);
+
+        // Control Panel
+        controlPanel.setBackground(bg);
+        controlPanel.getInterfaceComboBox().setBackground(panelBg);
+        controlPanel.getInterfaceComboBox().setForeground(text);
+        controlPanel.getProtocolComboBox().setBackground(panelBg);
+        controlPanel.getProtocolComboBox().setForeground(text);
+        controlPanel.getButtonStart().setBackground(buttonBg);
+        controlPanel.getButtonStart().setForeground(buttonFg);
+        controlPanel.getButtonStop().setBackground(buttonBg);
+        controlPanel.getButtonStop().setForeground(buttonFg);
+        controlPanel.getButtonExit().setBackground(buttonBg);
+        controlPanel.getButtonExit().setForeground(buttonFg);
+        controlPanel.getRlEnabledCheckbox().setBackground(bg);
+        controlPanel.getRlEnabledCheckbox().setForeground(text);
+        controlPanel.getStatusLabel().setForeground(dark ? new Color(0, 173, 238) : new Color(0, 100, 0));
+        controlPanel.getDarkModeToggle().setBackground(toggleBg);
+        controlPanel.getDarkModeToggle().setForeground(toggleFg);
+        controlPanel.getDarkModeToggle().setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(dark ? new Color(0, 173, 238) : new Color(200, 200, 200)),
+            BorderFactory.createEmptyBorder(5, 15, 5, 15)
+        ));
+
+        // Simulation Panel
+        simulationPanel.setBackground(bg);
+        simulationPanel.getSimulateDdosButton().setBackground(buttonBg);
+        simulationPanel.getSimulateDdosButton().setForeground(buttonFg);
+        simulationPanel.getSimulateSqlInjectionButton().setBackground(buttonBg);
+        simulationPanel.getSimulateSqlInjectionButton().setForeground(buttonFg);
+        simulationPanel.getSimulatePortScanButton().setBackground(buttonBg);
+        simulationPanel.getSimulatePortScanButton().setForeground(buttonFg);
+        simulationPanel.getTestSnortRulesButton().setBackground(buttonBg);
+        simulationPanel.getTestSnortRulesButton().setForeground(buttonFg);
+        simulationPanel.setBorder(new javax.swing.border.CompoundBorder(
+            new javax.swing.border.LineBorder(border, 1, true),
+            new javax.swing.border.EmptyBorder(10, 10, 10, 10)
+        ));
+
+        // Packet Display Panel
+        packetDisplayPanel.setBackground(bg);
+        packetDisplayPanel.getPacketArea().setBackground(panelBg);
+        packetDisplayPanel.getPacketArea().setForeground(text);
+        packetDisplayPanel.getHeaderLabel().setForeground(header);
+        packetDisplayPanel.setBorder(new javax.swing.border.CompoundBorder(
+            new javax.swing.border.LineBorder(border, 1, true),
+            new javax.swing.border.EmptyBorder(18, 18, 18, 18)
+        ));
+
+        // Traffic Statistics Panel
+        trafficStatisticsPanel.setBackground(bg);
+        trafficStatisticsPanel.getStatsArea().setBackground(panelBg);
+        trafficStatisticsPanel.getStatsArea().setForeground(text);
+        trafficStatisticsPanel.getHeaderLabel().setForeground(header);
+        trafficStatisticsPanel.getLastUpdateLabel().setForeground(subText);
+        trafficStatisticsPanel.setBorder(new javax.swing.border.CompoundBorder(
+            new javax.swing.border.LineBorder(border, 1, true),
+            new javax.swing.border.EmptyBorder(18, 18, 18, 18)
+        ));
+
+        // RL Statistics Panel
+        rlStatisticsPanel.setBackground(bg);
+        rlStatisticsPanel.getStatsArea().setBackground(panelBg);
+        rlStatisticsPanel.getStatsArea().setForeground(text);
+        rlStatisticsPanel.getHeaderLabel().setForeground(header);
+        rlStatisticsPanel.getLastUpdateLabel().setForeground(subText);
+        rlStatisticsPanel.setBorder(new javax.swing.border.CompoundBorder(
+            new javax.swing.border.LineBorder(border, 1, true),
+            new javax.swing.border.EmptyBorder(18, 18, 18, 18)
+        ));
+
+        // Log Panel
+        logPanel.setBackground(bg);
+        logPanel.getLogArea().setBackground(panelBg);
+        logPanel.getLogArea().setForeground(text);
+        logPanel.getHeaderLabel().setForeground(header);
+        logPanel.setBorder(new javax.swing.border.CompoundBorder(
+            new javax.swing.border.LineBorder(border, 1, true),
+            new javax.swing.border.EmptyBorder(18, 18, 18, 18)
+        ));
+
+        // RL Decisions Panel
+        rlDecisionsPanel.setBackground(bg);
+        rlDecisionsPanel.getRLDecisionsArea().setBackground(panelBg);
+        rlDecisionsPanel.getRLDecisionsArea().setForeground(text);
+        rlDecisionsPanel.getHeaderLabel().setForeground(header);
+        rlDecisionsPanel.setBorder(new javax.swing.border.CompoundBorder(
+            new javax.swing.border.LineBorder(border, 1, true),
+            new javax.swing.border.EmptyBorder(18, 18, 18, 18)
+        ));
+
+        SwingUtilities.updateComponentTreeUI(this);
     }
 
     public void setRuleEngine(RuleEngine ruleEngine) {

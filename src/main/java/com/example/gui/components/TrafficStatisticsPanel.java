@@ -111,4 +111,8 @@ public class TrafficStatisticsPanel extends JPanel {
         alertCount.set(0);
         updateDisplay();
     }
+
+    public JLabel getHeaderLabel() { return headerLabel; }
+    public JTextArea getStatsArea() { return statsArea; }
+    public JLabel getLastUpdateLabel() { return lastUpdateLabel; }
 } 

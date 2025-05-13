@@ -84,7 +84,6 @@ public class RLDecisionsPanel extends JPanel {
         decisionCountLabel.setText("Decisions: 0");
     }
 
-    public JTextPane getRLDecisionsArea() {
-        return rlDecisionsArea;
-    }
+    public JLabel getHeaderLabel() { return headerLabel; }
+    public JTextPane getRLDecisionsArea() { return rlDecisionsArea; }
 } 

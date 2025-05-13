@@ -19,6 +19,7 @@ public class ControlPanel extends JPanel {
     private JLabel statusLabel;
     private String selectedProtocol = "ALL";
     private Map<String, String> interfaceMap = new HashMap<>();
+    private JToggleButton darkModeToggle;
 
     public ControlPanel() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -44,6 +45,14 @@ public class ControlPanel extends JPanel {
         buttonExit = createButton("Exit", "exit.png");
         rlEnabledCheckbox = new JCheckBox("Enable RL IP Control");
         statusLabel = new JLabel("Status: Ready");
+        darkModeToggle = new JToggleButton("Dark Mode");
+        darkModeToggle.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        darkModeToggle.setFocusPainted(false);
+        darkModeToggle.setBackground(new Color(230, 230, 230));
+        darkModeToggle.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createEmptyBorder(5, 15, 5, 15)
+        ));
 
         // Style the status label
         statusLabel.setFont(new Font("Arial", Font.BOLD, 12));
@@ -77,8 +86,9 @@ public class ControlPanel extends JPanel {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Row 0: Interface and Protocol
+        // Row 0: All controls in a single row
         gbc.gridx = 0; gbc.gridy = 0;
         controlsPanel.add(new JLabel("Network Interface:"), gbc);
         gbc.gridx = 1;
@@ -89,16 +99,21 @@ public class ControlPanel extends JPanel {
         gbc.gridx = 3;
         controlsPanel.add(protocolComboBox, gbc);
 
-        // Row 1: Buttons, RL Checkbox, Status
-        gbc.gridx = 0; gbc.gridy = 1;
-        controlsPanel.add(buttonStart, gbc);
-        gbc.gridx = 1;
-        controlsPanel.add(buttonStop, gbc);
-        gbc.gridx = 2;
-        controlsPanel.add(buttonExit, gbc);
-        gbc.gridx = 3;
-        controlsPanel.add(rlEnabledCheckbox, gbc);
         gbc.gridx = 4;
+        controlsPanel.add(buttonStart, gbc);
+        gbc.gridx = 5;
+        controlsPanel.add(buttonStop, gbc);
+        gbc.gridx = 6;
+        controlsPanel.add(buttonExit, gbc);
+        gbc.gridx = 7;
+        controlsPanel.add(rlEnabledCheckbox, gbc);
+        gbc.gridx = 8;
+        controlsPanel.add(darkModeToggle, gbc);
+        gbc.gridx = 9;
+        gbc.weightx = 1.0;
+        controlsPanel.add(Box.createHorizontalGlue(), gbc); // push status label to the right
+        gbc.gridx = 10;
+        gbc.weightx = 0;
         controlsPanel.add(statusLabel, gbc);
 
         setLayout(new BorderLayout());
@@ -132,6 +147,7 @@ public class ControlPanel extends JPanel {
     public JCheckBox getRlEnabledCheckbox() { return rlEnabledCheckbox; }
     public JLabel getStatusLabel() { return statusLabel; }
     public String getSelectedProtocol() { return selectedProtocol; }
+    public JToggleButton getDarkModeToggle() { return darkModeToggle; }
 
     // Setters
     public void setSelectedProtocol(String protocol) { this.selectedProtocol = protocol; }
