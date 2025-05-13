@@ -29,7 +29,7 @@ A sophisticated Network Intrusion Detection System (NIDS) that combines traditio
 
 ## 📋 Prerequisites
 
-- Java Development Kit (JDK) 11 or higher
+- Java Development Kit (JDK) 17 or higher
 - Maven 3.6 or higher
 - Network interface with packet capture capabilities
 - Administrator/root privileges for packet capture
@@ -391,8 +391,9 @@ mvn test
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## �� Acknowledgments
 
+- [Omar Sawaf](https://github.com/omarsawaf1/IDS) for the original project structure and inspiration
 - Snort for rule-based detection
 - Pcap4J for packet capture
 - Various open-source RL libraries
