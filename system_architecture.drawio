@@ -1,0 +1,130 @@
+<mxfile host="app.diagrams.net" modified="2024-03-19T12:00:00.000Z" agent="Mozilla/5.0" version="21.7.5" etag="your-etag" type="device">
+  <diagram id="system_architecture" name="IDS System Architecture">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        
+        <!-- Title -->
+        <mxCell id="title" value="Network Intrusion Detection System" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="20" width="680" height="40" as="geometry"/>
+        </mxCell>
+        
+        <!-- Main Components -->
+        <mxCell id="main" value="Main Application" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;shadow=1;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="440" y="80" width="280" height="120" as="geometry"/>
+        </mxCell>
+        
+        <!-- GUI Components -->
+        <mxCell id="gui" value="GUI Components" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#d5e8d4;strokeColor=#82b366;shadow=1;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="240" height="400" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="control_panel" value="🎮 Control Panel" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="gui">
+          <mxGeometry y="30" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="simulation_panel" value="🎯 Simulation Panel" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="gui">
+          <mxGeometry y="60" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="packet_display" value="📦 Packet Display" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="gui">
+          <mxGeometry y="90" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="statistics_panel" value="📊 Statistics Panel" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="gui">
+          <mxGeometry y="120" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="log_panel" value="📝 Log Panel" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="gui">
+          <mxGeometry y="150" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="rl_decisions" value="🤖 RL Decisions Panel" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="gui">
+          <mxGeometry y="180" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <!-- Core Engine -->
+        <mxCell id="engine" value="Core Engine" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#ffe6cc;strokeColor=#d79b00;shadow=1;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="320" y="240" width="240" height="400" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="packet_capture" value="🔍 Packet Capture" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="engine">
+          <mxGeometry y="30" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="rule_engine" value="⚡ Rule Engine" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="engine">
+          <mxGeometry y="60" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="rl_agent" value="🧠 RL Agent" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="engine">
+          <mxGeometry y="90" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="thread_manager" value="⚙️ Thread Manager" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="engine">
+          <mxGeometry y="120" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <!-- Data Storage -->
+        <mxCell id="storage" value="Data Storage" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#f8cecc;strokeColor=#b85450;shadow=1;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="600" y="240" width="240" height="400" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="logs" value="📁 Log Files" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="storage">
+          <mxGeometry y="30" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="rules" value="📋 Snort Rules" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="storage">
+          <mxGeometry y="60" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="model" value="💾 RL Model" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="storage">
+          <mxGeometry y="90" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <!-- Connections -->
+        <mxCell id="conn1" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="1" source="main" target="gui">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="conn2" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="1" source="main" target="engine">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="conn3" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="1" source="main" target="storage">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- Data Flow -->
+        <mxCell id="flow1" value="📦 Packet Data" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;strokeWidth=2;fontSize=12;" edge="1" parent="1" source="packet_capture" target="packet_display">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="flow2" value="⚠️ Alerts" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;strokeWidth=2;fontSize=12;" edge="1" parent="1" source="rule_engine" target="log_panel">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="flow3" value="🤖 Decisions" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;strokeWidth=2;fontSize=12;" edge="1" parent="1" source="rl_agent" target="rl_decisions">
+          <mxGeometry width="50" height="50" relative="1" as="geometry"/>
+        </mxCell>
+        
+        <!-- Legend -->
+        <mxCell id="legend" value="Legend" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;shadow=1;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="880" y="40" width="240" height="120" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="legend1" value="🎨 GUI Components" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="legend">
+          <mxGeometry y="30" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="legend2" value="⚡ Core Engine" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="legend">
+          <mxGeometry y="60" width="240" height="30" as="geometry"/>
+        </mxCell>
+        
+        <mxCell id="legend3" value="💾 Data Storage" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;fontSize=14;" vertex="1" parent="legend">
+          <mxGeometry y="90" width="240" height="30" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile> 

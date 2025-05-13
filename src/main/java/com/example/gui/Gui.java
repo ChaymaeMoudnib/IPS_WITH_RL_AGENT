@@ -67,19 +67,36 @@ public class Gui extends JFrame {
         topPanel.add(simulationPanel, BorderLayout.SOUTH);
 
         // Middle panel with packet display and statistics
-        JPanel middlePanel = new JPanel(new GridLayout(1, 2));
-        middlePanel.add(packetDisplayPanel);
-        middlePanel.add(statisticsPanel);
+        JSplitPane middleSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, packetDisplayPanel, statisticsPanel);
+        middleSplitPane.setResizeWeight(0.5);
+        middleSplitPane.setDividerLocation(0.5);
+        middleSplitPane.setDividerSize(5);
+        middleSplitPane.setOneTouchExpandable(true);
 
         // Bottom panel with logs and RL decisions
-        JPanel bottomPanel = new JPanel(new GridLayout(1, 2));
-        bottomPanel.add(logPanel);
-        bottomPanel.add(rlDecisionsPanel);
+        JSplitPane bottomSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, logPanel, rlDecisionsPanel);
+        bottomSplitPane.setResizeWeight(0.5);
+        bottomSplitPane.setDividerLocation(0.5);
+        bottomSplitPane.setDividerSize(5);
+        bottomSplitPane.setOneTouchExpandable(true);
+
+        // Main split pane for middle and bottom panels
+        JSplitPane mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, middleSplitPane, bottomSplitPane);
+        mainSplitPane.setResizeWeight(0.5);
+        mainSplitPane.setDividerLocation(0.5);
+        mainSplitPane.setDividerSize(5);
+        mainSplitPane.setOneTouchExpandable(true);
 
         // Add all panels to the frame
         add(topPanel, BorderLayout.NORTH);
-        add(middlePanel, BorderLayout.CENTER);
-        add(bottomPanel, BorderLayout.SOUTH);
+        add(mainSplitPane, BorderLayout.CENTER);
+
+        // Set minimum sizes for panels
+        Dimension minSize = new Dimension(400, 200);
+        packetDisplayPanel.setMinimumSize(minSize);
+        statisticsPanel.setMinimumSize(minSize);
+        logPanel.setMinimumSize(minSize);
+        rlDecisionsPanel.setMinimumSize(minSize);
     }
 
     private void setupEventListeners() {
@@ -157,61 +174,78 @@ public class Gui extends JFrame {
                 }
             } catch (Exception e) {
                 logPanel.appendText("Error processing packet: " + e.getMessage() + "\n");
+                if (e instanceof IllegalStateException) {
+                    // Handle interface closed or other fatal errors
+                    stopCapture();
+                    JOptionPane.showMessageDialog(this, 
+                        "Packet capture stopped due to error: " + e.getMessage(),
+                        "Capture Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    break;
+                }
             }
         }
     }
 
     private void processPacket(Packet packet) {
-        State state = env.extractState(packet);
-        Map<String, String> packetData = new HashMap<>();
-        packetData.put("protocol", state.getProtocol());
-        packetData.put("srcPort", state.getSrcPort());
-        packetData.put("srcIP", state.getSrcIP());
-        packetData.put("destPort", state.getDestPort());
-        packetData.put("destIP", state.getDestIP());
-
-        // Update packet display
-        packetDisplayPanel.appendPacket(packetData);
-
-        // Update statistics
-        statisticsPanel.updateStatistics(packetData);
-
-        // Check rules
-        boolean ruleMatch = ruleEngine.matches(packetData);
-        if (ruleMatch) {
-            Alert alert = ruleEngine.getLastAlert();
-            logPanel.displayAlert(alert);
-            statisticsPanel.incrementAlertCount();
-        }
-
-        // RL decision if enabled
-        if (controlPanel.getRlEnabledCheckbox().isSelected()) {
-            Action rlAction = rlAgent.getAction(state);
-            boolean isAllowed = rlAction.isAllowed();
-
-            if (isAllowed) {
-                allowedCount.incrementAndGet();
-            } else {
-                blockedCount.incrementAndGet();
+        try {
+            State state = env.extractState(packet);
+            if (state == null) {
+                return; // Skip invalid packets
             }
 
-            String decision = String.format("[%s] %s:%s -> %s:%s (%s) - %s",
-                    state.getProtocol(),
-                    state.getSrcIP(),
-                    state.getSrcPort(),
-                    state.getDestIP(),
-                    state.getDestPort(),
-                    state.getData(),
-                    isAllowed ? "ALLOWED" : "BLOCKED");
+            Map<String, String> packetData = new HashMap<>();
+            packetData.put("protocol", state.getProtocol());
+            packetData.put("srcPort", state.getSrcPort());
+            packetData.put("srcIP", state.getSrcIP());
+            packetData.put("destPort", state.getDestPort());
+            packetData.put("destIP", state.getDestIP());
 
-            rlDecisionsPanel.appendDecision(decision);
+            // Update packet display
+            packetDisplayPanel.appendPacket(packetData);
 
-            // Update RL statistics
-            Map<String, Object> rlStats = new HashMap<>();
-            rlStats.put("allowedCount", allowedCount.get());
-            rlStats.put("blockedCount", blockedCount.get());
-            rlStats.put("accuracy", calculateAccuracy());
-            statisticsPanel.updateRLStats(rlStats);
+            // Update statistics
+            statisticsPanel.updateStatistics(packetData);
+
+            // Check rules
+            boolean ruleMatch = ruleEngine.matches(packetData);
+            if (ruleMatch) {
+                Alert alert = ruleEngine.getLastAlert();
+                logPanel.displayAlert(alert);
+                statisticsPanel.incrementAlertCount();
+            }
+
+            // RL decision if enabled
+            if (controlPanel.getRlEnabledCheckbox().isSelected()) {
+                Action rlAction = rlAgent.getAction(state);
+                boolean isAllowed = rlAction.isAllowed();
+
+                if (isAllowed) {
+                    allowedCount.incrementAndGet();
+                } else {
+                    blockedCount.incrementAndGet();
+                }
+
+                String decision = String.format("[%s] %s:%s -> %s:%s (%s) - %s",
+                        state.getProtocol(),
+                        state.getSrcIP(),
+                        state.getSrcPort(),
+                        state.getDestIP(),
+                        state.getDestPort(),
+                        state.getData(),
+                        isAllowed ? "ALLOWED" : "BLOCKED");
+
+                rlDecisionsPanel.appendDecision(decision);
+
+                // Update RL statistics
+                Map<String, Object> rlStats = new HashMap<>();
+                rlStats.put("allowedCount", allowedCount.get());
+                rlStats.put("blockedCount", blockedCount.get());
+                rlStats.put("accuracy", calculateAccuracy());
+                statisticsPanel.updateRLStats(rlStats);
+            }
+        } catch (Exception e) {
+            logPanel.appendText("Error processing packet data: " + e.getMessage() + "\n");
         }
     }
 

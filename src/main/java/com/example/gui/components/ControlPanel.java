@@ -35,7 +35,7 @@ public class ControlPanel extends JPanel {
         // Style the combo boxes
         interfaceComboBox = new JComboBox<>();
         protocolComboBox = new JComboBox<>(new String[] { "ALL", "TCP", "UDP", "HTTP", "HTTPS" });
-        interfaceComboBox.setPreferredSize(new Dimension(250, 25));
+        interfaceComboBox.setPreferredSize(new Dimension(500, 25));
         protocolComboBox.setPreferredSize(new Dimension(100, 25));
 
         // Create buttons with icons
@@ -72,31 +72,37 @@ public class ControlPanel extends JPanel {
     }
 
     private void setupLayout() {
-        JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        JPanel controlsPanel = new JPanel(new GridBagLayout());
         controlsPanel.setBackground(new Color(245, 245, 245));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
 
-        // Network Interface selection
-        JPanel interfacePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        interfacePanel.setBackground(new Color(245, 245, 245));
-        interfacePanel.add(new JLabel("Network Interface:"));
-        interfacePanel.add(interfaceComboBox);
-        controlsPanel.add(interfacePanel);
+        // Row 0: Interface and Protocol
+        gbc.gridx = 0; gbc.gridy = 0;
+        controlsPanel.add(new JLabel("Network Interface:"), gbc);
+        gbc.gridx = 1;
+        controlsPanel.add(interfaceComboBox, gbc);
 
-        // Protocol selection
-        JPanel protocolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        protocolPanel.setBackground(new Color(245, 245, 245));
-        protocolPanel.add(new JLabel("Protocol:"));
-        protocolPanel.add(protocolComboBox);
-        controlsPanel.add(protocolPanel);
+        gbc.gridx = 2;
+        controlsPanel.add(new JLabel("Protocol:"), gbc);
+        gbc.gridx = 3;
+        controlsPanel.add(protocolComboBox, gbc);
 
-        // Buttons
-        controlsPanel.add(buttonStart);
-        controlsPanel.add(buttonStop);
-        controlsPanel.add(buttonExit);
-        controlsPanel.add(rlEnabledCheckbox);
-        controlsPanel.add(statusLabel);
+        // Row 1: Buttons, RL Checkbox, Status
+        gbc.gridx = 0; gbc.gridy = 1;
+        controlsPanel.add(buttonStart, gbc);
+        gbc.gridx = 1;
+        controlsPanel.add(buttonStop, gbc);
+        gbc.gridx = 2;
+        controlsPanel.add(buttonExit, gbc);
+        gbc.gridx = 3;
+        controlsPanel.add(rlEnabledCheckbox, gbc);
+        gbc.gridx = 4;
+        controlsPanel.add(statusLabel, gbc);
 
-        add(controlsPanel);
+        setLayout(new BorderLayout());
+        add(controlsPanel, BorderLayout.CENTER);
     }
 
     private void loadNetworkInterfaces() {
