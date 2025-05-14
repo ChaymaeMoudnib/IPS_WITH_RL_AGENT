@@ -4,8 +4,18 @@ import org.pcap4j.packet.IpPacket;
 import org.pcap4j.packet.Packet;
 import org.pcap4j.packet.TcpPacket;
 import org.pcap4j.packet.UdpPacket;
+import com.example.detection.AnomalyDetector;
 
 public class Environment {
+    private final AnomalyDetector anomalyDetector;
+
+    public Environment() {
+        this.anomalyDetector = new AnomalyDetector();
+    }
+
+    public AnomalyDetector getAnomalyDetector() {
+        return anomalyDetector;
+    }
 
     public State extractState(Packet packet) {
         IpPacket ipPacket = packet.get(IpPacket.class);

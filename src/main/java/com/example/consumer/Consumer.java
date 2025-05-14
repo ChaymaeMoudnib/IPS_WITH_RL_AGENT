@@ -3,7 +3,7 @@ package com.example.consumer;
 import com.example.detection.AnomalyDetector;
 import com.example.detection.Alert;
 import com.example.logging.AlertLogger;
-import com.example.util.RuleEngine;
+import com.example.detection.RuleEngine;
 import com.example.util.PacketParser;
 import com.example.designpatterns.StrategyPattern.ConsumerStrategy;
 import java.util.Map;

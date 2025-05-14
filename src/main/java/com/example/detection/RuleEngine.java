@@ -106,6 +106,23 @@ public class RuleEngine {
             if (!matchesIpAddresses(packet, rule)) return false;
             if (!matchesPorts(packet, rule)) return false;
 
+            // Vérifier les paramètres ICMP spécifiques
+            if (rule.getProtocol().equalsIgnoreCase("ICMP")) {
+                String icmpId = rule.getOptions().get("icmp_id");
+                String icmpType = rule.getOptions().get("itype");
+                String icmpCode = rule.getOptions().get("icode");
+
+                if (icmpId != null && !icmpId.equals(packet.get("icmp_id"))) {
+                    return false;
+                }
+                if (icmpType != null && !icmpType.equals(packet.get("itype"))) {
+                    return false;
+                }
+                if (icmpCode != null && !icmpCode.equals(packet.get("icode"))) {
+                    return false;
+                }
+            }
+
             String content = rule.getOptions().get("content");
             if (content != null) {
                 String data = packet.get("data");
@@ -122,10 +139,11 @@ public class RuleEngine {
                 }
 
                 if (!contentMatched) return false;
-                }
+            }
 
-        return true;
+            return true;
         } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Error matching rule", e);
             return false;
         }
     }

@@ -41,7 +41,7 @@ public class SimulationPanel extends JPanel {
             Image scaledImage = icon.getImage().getScaledInstance(24, 24, Image.SCALE_SMOOTH);
             button.setIcon(new ImageIcon(scaledImage));
         } catch (Exception e) {
-            // Icon not found, continue without it
+           
         }
         button.setFocusPainted(false);
         button.setBackground(new Color(240, 240, 240));

@@ -1,411 +1,193 @@
-# 🛡️ Network Intrusion Detection System with Reinforcement Learning
+# 🛡️ Network Intrusion Detection & Prevention System (IDPS) with Reinforcement Learning
 
-A sophisticated Network Intrusion Detection System (NIDS) that combines traditional rule-based detection with Reinforcement Learning (RL) for enhanced security monitoring and threat detection. This system helps you monitor your network traffic, detect potential threats, and learn from patterns to improve security over time.
+A modern, hybrid Intrusion Detection and Prevention System that combines traditional Snort-style rule-based detection with Reinforcement Learning (RL) for adaptive, intelligent network security.  
+Monitor, detect, and respond to threats in real time, with a user-friendly GUI and advanced alerting.
+
 
 ## ✨ Features
 
-### 🎯 Core Functionality
-- Real-time network packet capture and analysis
-- Rule-based intrusion detection using Snort rules
-- Reinforcement Learning-based decision making
-- Multi-threaded packet processing
-- Comprehensive traffic statistics and monitoring
+### Core Functionality
+- **Real-time packet capture** (using Pcap4J)
+- **Rule-based detection** (Snort rules, custom rules)
+- **Reinforcement Learning agent** for adaptive threat response
+- **Multi-threaded** processing for high performance
+- **Comprehensive statistics**: protocol, traffic, alerts, RL accuracy
 
-### 🖥️ GUI Components
-- **Control Panel**: Network interface selection and capture controls
-- **Simulation Panel**: Attack simulation tools
-- **Packet Display**: Real-time packet information display
-- **Statistics Panel**: Traffic and RL performance metrics
-- **Log Panel**: Alert and event logging with severity indicators
-- **RL Decisions Panel**: Reinforcement Learning decisions display
+### Security & Detection
+- Detects:  
+  - XSS attacks  
+  - SQL injection  
+  - Port scans    
+  - Custom Snort rules (ICMP, TCP, UDP, etc.)
+- **Anomaly detection** (heuristics + RL)
+- **Active/Passive blocking** (configurable)
+- **Alert severity**: CRITICAL, HIGH, MEDIUM, LOW
 
-### 🔒 Security Features
-- DDoS attack detection
-- SQL injection detection
-- Port scanning detection
-- Custom rule support
-- Real-time threat assessment
-- Adaptive learning capabilities
+### GUI Highlights
+- **Control Panel**: Start/stop capture, select interface, toggle RL
+- **Simulation Panel**: Simulate XSS, SQLi, Port Scan, Snort rule tests
+- **Packet Display**: Live packet info
+- **Statistics Panel**: Traffic, RL stats, accuracy
+- **Log Panel**: Alerts, events, exportable logs
+- **RL Decisions Panel**: RL agent actions, confidence, learning
+
+### Alerting & Logging
+- **Visual alerts** in GUI (color-coded, icons)
+- **Email notifications** for HIGH/CRITICAL alerts (configurable)
+- **Persistent log files** (`logs/ids_YYYY-MM-DD.log`)
+- **Export logs** for analysis
+
+### Extensibility
+- Add new rules in `rules/snort.rules`
+- Plug in new RL models (`trained_model.rl`)
+- Modular codebase for easy feature addition
+
+---
 
 ## 📋 Prerequisites
 
-- Java Development Kit (JDK) 17 or higher
-- Maven 3.6 or higher
-- Network interface with packet capture capabilities
-- Administrator/root privileges for packet capture
+- Java 17+
+- Maven 3.6+
+- Admin/root privileges for packet capture
+- Network interface with promiscuous mode
+
+---
 
 ## 📦 Dependencies
 
-### Core Dependencies
-```xml
-<dependencies>
-    <!-- Packet Capture -->
-    <dependency>
-        <groupId>org.pcap4j</groupId>
-        <artifactId>pcap4j-core</artifactId>
-        <version>1.8.2</version>
-    </dependency>
-    <dependency>
-        <groupId>org.pcap4j</groupId>
-        <artifactId>pcap4j-packetfactory-static</artifactId>
-        <version>1.8.2</version>
-    </dependency>
+See `pom.xml` for all dependencies.  
+Key libraries:
+- `pcap4j-core` (packet capture)
+- `flatlaf` (modern GUI)
+- `logback-classic` (logging)
+- `junit` (testing)
 
-    <!-- GUI -->
-    <dependency>
-        <groupId>com.formdev</groupId>
-        <artifactId>flatlaf</artifactId>
-        <version>2.6</version>
-    </dependency>
-
-    <!-- Logging -->
-    <dependency>
-        <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
-        <version>1.2.11</version>
-    </dependency>
-
-    <!-- Testing -->
-    <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.13.2</version>
-        <scope>test</scope>
-    </dependency>
-</dependencies>
-```
+---
 
 ## 🚀 Installation
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/network-ids-rl.git
-cd network-ids-rl
-```
-
-2. Build the project:
-```bash
+git clone https://github.com/ChaymaeMoudnib/IPS_WITH_RL_AGENT
+cd IPS_WITH_RL_AGENT
 mvn clean install
 ```
 
-3. Create required directories:
-```bash
-mkdir -p logs
-mkdir -p rules
-```
-
-4. Download Snort rules:
-```bash
-# Place your snort.rules file in the rules directory
-cp path/to/your/snort.rules rules/
-```
+---
 
 ## ⚙️ Configuration
 
 ### Network Interface
-The system requires a network interface with packet capture capabilities. Common interfaces include:
 - Windows: `\Device\NPF_{GUID}`
 - Linux: `eth0`, `wlan0`
 - macOS: `en0`, `en1`
 
-### Rule Configuration
-1. Place your Snort rules in the `rules/snort.rules` file
-2. Custom rules can be added following Snort rule syntax
+### Rules
+- Place Snort rules in `rules/snort.rules`
+- Use standard Snort syntax (see [Snort Docs](https://www.snort.org/documents))
 
 ### RL Model
-1. Place your trained RL model in the project root as `trained_model.rl`
-2. The model should be compatible with the RLAgent implementation
+- Place your RL model as `trained_model.rl` in the project root
+
+### Email Alerts
+- Configure via GUI: "Configure Email Alerts" button
+- Requires Gmail address and App Password (see help in dialog)
+
+---
 
 ## 🎮 Usage
 
-### Starting the Application
+### Start the Application
 ```bash
 java -jar target/network-ids-rl.jar
 ```
+- Select interface, click "Start"
+- Use simulation buttons to test detection (XSS, SQLi, Port Scan, Snort rules)
+- Monitor all panels for live feedback
 
-### Basic Operations
-1. Select a network interface from the dropdown
-2. Click "Start" to begin packet capture
-3. Monitor the various panels for:
-   - Captured packets
-   - Security alerts
-   - RL decisions
-   - Traffic statistics
+### Stopping & Exporting
+- Click "Stop" to end capture
+- Logs are saved in `logs/`
+- Export logs via GUI or manually
 
-### Running a Complete Simulation
-1. **Launch the Application**
-   ```bash
-   java -jar target/network-ids-rl.jar
-   ```
+---
 
-2. **Interface Selection**
-   - Open the dropdown menu in the Control Panel
-   - Select your active network interface
-   - Common interfaces:
-     - Windows: `\Device\NPF_{GUID}`
-     - Linux: `eth0`, `wlan0`
-     - macOS: `en0`, `en1`
+## 🧪 Simulation Scenarios
 
-3. **Start Capture**
-   - Click the "Start" button in the Control Panel
-   - Wait 2-3 seconds for the capture to initialize
-   - The Packet Display panel should start showing incoming packets
-   - The Statistics panel will begin updating with traffic data
+- **DDoS**: `hping3 -S -p 80 --flood <target>`
+- **SQL Injection**: `curl "http://target.com/login.php?username=admin' OR '1'='1"`
+- **Port Scan**: `nmap -sS -p 1-1000 <target>`
+- **Snort Rule Test**: Add a rule, generate matching traffic
 
-4. **Enable RL Model**
-   - The RL model is automatically loaded at startup
-   - Monitor the RL Decisions panel for real-time decisions
-   - The model will start learning from the traffic patterns
-
-5. **Customizing Blocking Behavior**
-   By default, the system uses passive blocking (monitoring only). To enable active blocking:
-
-   a. **Modify the RLAgent.java file**:
-   ```java
-   public class RLAgent {
-       private boolean activeBlocking = false;  // Set to true for active blocking
-       
-       public void setActiveBlocking(boolean active) {
-           this.activeBlocking = active;
-       }
-       
-       private void handleDecision(Packet packet, Decision decision) {
-           if (decision == Decision.BLOCK) {
-               if (activeBlocking) {
-                   // Implement active blocking logic
-                   blockPacket(packet);
-               } else {
-                   // Log the blocked packet (passive mode)
-                   logBlockedPacket(packet);
-               }
-           }
-       }
-       
-       private void blockPacket(Packet packet) {
-           // Add your custom blocking logic here
-           // Example: Drop packet, close connection, etc.
-       }
-   }
-   ```
-
-   b. **Add Custom Blocking Rules**:
-   ```java
-   public class CustomBlockingRules {
-       public static void applyBlockingRules(Packet packet) {
-           // Add your custom rules
-           if (isDDoSAttack(packet)) {
-               blockSourceIP(packet.getSourceIP());
-           }
-           if (isSQLInjection(packet)) {
-               blockConnection(packet);
-           }
-       }
-   }
-   ```
-
-6. **Monitor the Results**
-   - Watch the Log Panel for security alerts
-   - Check the Statistics Panel for:
-     - Overall accuracy
-     - Real-time accuracy
-     - Blocked vs. Allowed packets
-   - Review the RL Decisions Panel for:
-     - Decision confidence levels
-     - Learning progress
-     - Blocking patterns
-
-7. **Stop and Analyze**
-   - Click "Stop" to end the capture
-   - Review the collected statistics
-   - Export logs if needed
-   - Analyze the RL model's performance
-
-### Performance Tips
-- Start with passive blocking to understand traffic patterns
-- Gradually enable active blocking for specific threats
-- Monitor system resources during active blocking
-- Adjust blocking rules based on false positive rates
-- Regularly update the RL model with new training data
-
-## 🎯 Simulation Scenarios
-
-### 1. DDoS Attack Simulation
-```bash
-# Using hping3 for SYN flood
-hping3 -S -p 80 --flood 192.168.1.100
-
-# Using LOIC (Low Orbit Ion Cannon)
-# Download and run LOIC, set target IP and port
-```
-
-Expected Behavior:
-- High number of SYN packets detected
-- RL agent should start blocking suspicious traffic
-- Statistics panel shows increased TCP traffic
-- Log panel displays DDoS alerts
-
-### 2. SQL Injection Test
-```bash
-# Using curl to simulate SQL injection
-curl "http://target.com/login.php?username=admin' OR '1'='1&password=anything"
-
-# Using SQLMap
-sqlmap -u "http://target.com/login.php" --forms
-```
-
-Expected Behavior:
-- Rule engine detects SQL injection patterns
-- RL agent learns to block similar patterns
-- Log panel shows SQL injection alerts
-- Statistics show blocked attempts
-
-### 3. Port Scanning
-```bash
-# Using nmap
-nmap -sS -p 1-1000 192.168.1.100
-
-# Using hping3
-hping3 -S -p ++1 192.168.1.100
-```
-
-Expected Behavior:
-- Multiple connection attempts detected
-- RL agent identifies scanning pattern
-- Log panel shows port scan alerts
-- Statistics show blocked ports
-
-### 4. Snort Rule Testing
-1. Add custom rule to `rules/snort.rules`:
-```
-alert tcp any any -> any 80 (msg:"Test Rule"; content:"test"; sid:1000001;)
-```
-
-2. Generate test traffic:
-```bash
-curl "http://target.com/test"
-```
-
-Expected Behavior:
-- Rule engine detects matching traffic
-- Alert generated in log panel
-- RL agent learns from rule matches
-
-## 📊 Monitoring
-
-### Packet Display
-- Shows detailed packet information
-- Color-coded by protocol
-- Real-time updates
-
-### Statistics
-- Traffic patterns
-- Protocol distribution
-- RL performance metrics
-- Accuracy over time
-
-### Logs
-- Security events
-- Severity levels
-- Timestamp and details
-- Export capability
-
-### RL Decisions
-- Real-time decisions
-- Confidence levels
-- Learning progress
-- Performance metrics
+---
 
 ## 🏗️ Project Structure
 
 ```
-network-ids-rl/
+IPS_WITH_RL_AGENT/
+IPS_WITH_RL_AGENT/
 ├── src/
 │   ├── main/
 │   │   ├── java/
 │   │   │   └── com/
 │   │   │       └── example/
-│   │   │           ├── capture/     # Packet capture implementation
-│   │   │           ├── detection/   # Rule-based detection
-│   │   │           ├── gui/         # User interface components
-│   │   │           └── rl/          # Reinforcement Learning implementation
+│   │   │           ├── capture/         # Packet capture implementation
+│   │   │           ├── detection/       # Rule engine, anomaly detection, alert classes
+│   │   │           ├── gui/             # GUI components (panels, main window, etc.)
+│   │   │           ├── logging/         # Logging utilities
+│   │   │           ├── rl/              # Reinforcement Learning agent and environment
+│   │   │           ├── util/            # Utility classes (rule parsing, validation, email, etc.)
+│   │   │           ├── engine/          # Core engine logic
+│   │   │           ├── producer/        # Producer logic for packets/events
+│   │   │           ├── consumer/        # Consumer logic for packets/events
+│   │   │           ├── concurrent/      # Concurrency helpers
+│   │   │           ├── designpatterns/  # Design pattern implementations
+│   │   │           ├── Main.java        # Main entry point
+│   │   │           └── IDPSController.java                  # Main controller class
 │   │   └── resources/
-│   │       └── icons/              # GUI icons
-├── logs/                           # Log files directory
-├── rules/                          # Snort rules directory
-├── pom.xml                         # Maven configuration
-└── README.md                       # This file
+│   │       ├── icons/                   # GUI icons and images
+│   │       └── rules/                   # Snort rules file(s)
+├── logs/                                # Log files generated by the system
+├── rules/                               # Directory for Snort rules
+├── pom.xml                              # Maven build configuration
+├── README.md                            # Project documentation
+├──
+└── 
 ```
 
-## 🛠️ Development
+---
 
-### Building from Source
-```bash
-mvn clean package
-```
+## 🛠️ Development & Extending
 
-### Running Tests
-```bash
-mvn test
-```
+- Add new rules in `rules/snort.rules`
+- Add new detection logic in `detection/`
+- Add new RL models in `rl/`
+- Update GUI in `gui/`
+- Run tests: `mvn test`
 
-### Adding New Features
-1. Follow the existing package structure
-2. Implement new components in appropriate packages
-3. Update the GUI to include new features
-4. Add appropriate tests
-
-## 🔧 Troubleshooting
-
-### Common Issues
-1. **Permission Denied**
-   - Ensure you have administrator/root privileges
-   - Check network interface permissions
-   - Run as administrator/root
-
-2. **No Packets Captured**
-   - Verify network interface selection
-   - Check interface is in promiscuous mode
-   - Ensure no firewall is blocking capture
-   - Try different network interfaces
-
-3. **RL Model Not Loading**
-   - Verify model file exists
-   - Check model compatibility
-   - Ensure correct file permissions
-   - Check model version compatibility
-
-### Logs
-- Check `logs/ids_YYYY-MM-DD.log` for detailed error information
-- Monitor system logs for permission issues
-- Export logs for analysis
+---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+- Fork, branch, commit, PR!
+
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License (see LICENSE)
 
-## �� Acknowledgments
-
-- [Omar Sawaf](https://github.com/omarsawaf1/IDS) for the original project structure and inspiration
-- Snort for rule-based detection
-- Pcap4J for packet capture
-- Various open-source RL libraries
-- Community contributors
+---
 
 ## 📞 Contact
 
-For support or questions, please open an issue in the GitHub repository.
+Open an issue on GitHub for support.
 
-## 📚 Additional Resources
+---
+
+## 📚 Resources
 
 - [Snort Documentation](https://www.snort.org/documents)
 - [Pcap4J Documentation](https://www.pcap4j.org/)
 - [Reinforcement Learning Tutorial](https://www.tensorflow.org/agents/tutorials/intro_rl)
 - [Network Security Best Practices](https://www.cisa.gov/cybersecurity)
+

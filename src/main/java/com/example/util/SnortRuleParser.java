@@ -24,6 +24,9 @@ public class SnortRuleParser {
         "(?:classtype:([^;]+);\\s*)?" +
         "(?:sid:(\\d+);\\s*)?" +
         "(?:rev:(\\d+);\\s*)?" +
+        "(?:icmp_id:(\\d+);\\s*)?" +
+        "(?:itype:(\\d+);\\s*)?" +
+        "(?:icode:(\\d+);\\s*)?" +
         ".*?\\)"
     );
 
@@ -109,6 +112,17 @@ public class SnortRuleParser {
             }
             if (matcher.group(12) != null) {
                 options.put("rev", matcher.group(12));
+            }
+
+            // ICMP specific options
+            if (matcher.group(13) != null) {
+                options.put("icmp_id", matcher.group(13));
+            }
+            if (matcher.group(14) != null) {
+                options.put("itype", matcher.group(14));
+            }
+            if (matcher.group(15) != null) {
+                options.put("icode", matcher.group(15));
             }
             
             // Default severity if not set

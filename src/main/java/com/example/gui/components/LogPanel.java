@@ -68,13 +68,17 @@ public class LogPanel extends JPanel {
     private void createLogDirectory() {
         File dir = new File(LOG_DIR);
         if (!dir.exists()) {
-            dir.mkdirs();
+            if (!dir.mkdirs()) {
+                System.err.println("Failed to create log directory: " + LOG_DIR);
+                return;
+            }
         }
         try {
             String logFile = LOG_DIR + "/ids_" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ".log";
             logWriter = new FileWriter(logFile, true);
+            System.out.println("Log file created: " + logFile);
         } catch (IOException e) {
-            appendText("Error creating log file: " + e.getMessage() + "\n");
+            System.err.println("Error creating log file: " + e.getMessage());
         }
     }
 
@@ -114,6 +118,16 @@ public class LogPanel extends JPanel {
             alertMessage.append(String.format("Data:        %s\n",
                     packetData.get("data")));
             alertMessage.append("----------------------------------------\n\n");
+        }
+
+        // Écrire dans le fichier de log
+        try {
+            if (logWriter != null) {
+                logWriter.write(alertMessage.toString());
+                logWriter.flush();
+            }
+        } catch (IOException e) {
+            System.err.println("Error writing to log file: " + e.getMessage());
         }
 
         appendColoredAlert(alertMessage.toString(), alert.getSeverity().toString());

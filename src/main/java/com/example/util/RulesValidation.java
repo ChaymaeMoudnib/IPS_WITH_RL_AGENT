@@ -32,17 +32,17 @@ public class RulesValidation {
      * @param rule La règle à valider
      * @return true si la règle est valide, false sinon
      */
-    public static boolean validateRule(Rule rule) {
-        if (rule == null) return false;
+    // public static boolean validateRule(Rule rule) {
+    //     if (rule == null) return false;
         
-        return validateProtocol(rule.getProtocol()) &&
-               validateIp(rule.getSourceIp()) &&
-               validatePort(rule.getSourcePort()) &&
-               validateDirection(rule.getDirection()) &&
-               validateIp(rule.getDestinationIp()) &&
-               validatePort(rule.getDestinationPort()) &&
-               validateOptions(rule.getOptions());
-    }
+    //     return validateProtocol(rule.getProtocol()) &&
+    //            validateIp(rule.getSourceIp()) &&
+    //            validatePort(rule.getSourcePort()) &&
+    //            validateDirection(rule.getDirection()) &&
+    //            validateIp(rule.getDestinationIp()) &&
+    //            validatePort(rule.getDestinationPort()) &&
+    //            validateOptions(rule.getOptions());
+    // }
     
     /**
      * Valide un tableau de tokens représentant une règle
