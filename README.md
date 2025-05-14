@@ -90,6 +90,23 @@ mvn clean install
 
 ---
 
+## 🎮 Usage
+
+### Start the Application
+Main.java
+
+- Select interface, click "Start"
+- Use simulation buttons to test detection (XSS, SQLi, Port Scan, Snort rules)
+- Monitor all panels for live feedback
+
+### Stopping & Exporting
+- Click "Stop" to end capture
+- Logs are saved in logs/
+- Export logs via GUI or manually
+
+---
+
+
 ## 🤝 Contributing
 
 - Fork, branch, commit, PR!
